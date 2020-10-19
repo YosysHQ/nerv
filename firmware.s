@@ -1,10 +1,9 @@
-li x2, 0
-li x3, 0x02000000
+li x1, 0x00000100
+li x2, 0x02000000
+sw x0, 0(x1)
 loop:
-li x1, 0x12345678
-addi x1, x1, -1
-addi x1, x1, -2
-sb x2, 0(x3)
-sw x1, 0(x3)
-addi x2, x2, 1
+lw x3, 0(x1)
+addi x3, x3, 1
+sw x3, 0(x1)
+sw x3, 0(x2)
 j loop
