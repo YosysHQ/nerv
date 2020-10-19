@@ -43,6 +43,7 @@ end
 
 integer i;
 always @(posedge clock) begin
+	out <= 32'h 0;
 	out_valid <= 1'b0;
 	imem_data <= mem[imem_addr[MEM_ADDR_WIDTH+1:2]];
 

@@ -14,6 +14,20 @@ module stupidrv #(
 	output [31:0] dmem_wdata,
 	input  [31:0] dmem_rdata
 );
+	reg mem_wr_enable;
+	reg [31:0] mem_wr_addr;
+	reg [31:0] mem_wr_data;
+	reg [3:0] mem_wr_strb;
+
+	reg mem_rd_enable;
+	reg [31:0] mem_rd_addr;
+	reg [4:0] mem_rd_reg;
+
+	assign dmem_valid = mem_wr_enable || mem_rd_enable;
+	assign dmem_addr = mem_wr_enable ? mem_wr_addr : mem_rd_enable ? mem_rd_addr : 32'h x;
+	assign dmem_wstrb = mem_wr_enable ? mem_wr_strb : 4'h 0;
+	assign dmem_wdata = mem_wr_enable ? mem_wr_data : 32'h x;
+
 	reg [31:0] regfile [0:31];
 	wire [31:0] insn;
 	reg [31:0] npc;
@@ -22,11 +36,8 @@ module stupidrv #(
 	assign imem_addr = npc;
 	assign insn = imem_data;
 
-	reg [31:0] bypass_value;
-	reg [ 4:0] bypass_reg;
-
-	wire [31:0] rs1_value = !insn_rs1 ? 0 : insn_rs1 == bypass_reg ? bypass_value : regfile[insn_rs1];
-	wire [31:0] rs2_value = !insn_rs2 ? 0 : insn_rs2 == bypass_reg ? bypass_value : regfile[insn_rs2];
+	wire [31:0] rs1_value = !insn_rs1 ? 0 : regfile[insn_rs1];
+	wire [31:0] rs2_value = !insn_rs2 ? 0 : regfile[insn_rs2];
 
 	wire [6:0] insn_funct7;
 	wire [4:0] insn_rs2;
@@ -38,7 +49,16 @@ module stupidrv #(
 	assign {insn_funct7, insn_rs2, insn_rs1, insn_funct3, insn_rd, insn_opcode} = insn;
 
 	wire [20:0] imm_j;
-	assign {imm_j[20], imm_j[10:1], imm_j[11], imm_j[19:12]} = insn[31:12];
+	assign {imm_j[20], imm_j[10:1], imm_j[11], imm_j[19:12], imm_j[0]} = {insn[31:12], 1'b0};
+
+	wire [31:0] imm_j_sext;
+	assign imm_j_sext = $signed(imm_j);
+
+	wire [11:0] imm_s;
+	assign imm_s[11:5] = insn_funct7, imm_s[4:0] = insn_rd;
+
+	wire [31:0] imm_s_sext;
+	assign imm_s_sext = $signed(imm_s);
 
 	localparam OPCODE_LOAD       = 7'b 00_000_11;
 	localparam OPCODE_STORE      = 7'b 01_000_11;
@@ -85,6 +105,15 @@ module stupidrv #(
 		next_rd = 0;
 		illinsn = 0;
 
+		mem_wr_enable = 0;
+		mem_wr_addr = 'hx;
+		mem_wr_data = 'hx;
+		mem_wr_strb = 'hx;
+
+		mem_rd_enable = 0;
+		mem_rd_addr = 'hx;
+		mem_rd_reg = 'hx;
+
 		case (insn_opcode)
 			OPCODE_LUI: begin
 				next_wr = 1;
@@ -95,7 +124,7 @@ module stupidrv #(
 				next_rd = (insn[31:12] << 12) + pc;
 			end
 			OPCODE_JAL: begin
-				npc = pc + imm_j;
+				npc = pc + imm_j_sext;
 			end
 			OPCODE_JALR: begin
 				case (insn_funct3)
@@ -130,11 +159,21 @@ module stupidrv #(
 			end
 			OPCODE_STORE: begin
 				case (insn_funct3)
-					3'b 000 /* SB  */: begin /* TBD */ end
-					3'b 001 /* SH  */: begin /* TBD */ end
-					3'b 010 /* SW  */: begin /* TBD */ end
+					3'b 000 /* SB  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 0001; end
+					3'b 001 /* SH  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 0011; end
+					3'b 010 /* SW  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 1111; end
 					default: illinsn = 1;
 				endcase
+				if (mem_wr_enable && mem_wr_addr[0] && !mem_wr_strb[3]) begin
+					mem_wr_addr = mem_wr_addr + 1;
+					mem_wr_data = mem_wr_data << 8;
+					mem_wr_strb = mem_wr_strb << 1;
+				end
+				if (mem_wr_enable && mem_wr_addr[2] && !mem_wr_strb[3:2]) begin
+					mem_wr_addr = mem_wr_addr + 2;
+					mem_wr_data = mem_wr_data << 16;
+					mem_wr_strb = mem_wr_strb << 2;
+				end
 			end
 			OPCODE_OP_IMM: begin
 				casez ({insn_funct7, insn_funct3})
@@ -180,21 +219,14 @@ module stupidrv #(
 	always @(posedge clock) begin
 		reset_q <= reset;
 
-		bypass_value <= 32'd 0;
-		bypass_reg <= 5'd 0;
-
 		if (!stall && !reset && !reset_q) begin
-			pc <= npc;
-			if (next_wr) begin
-				bypass_value <= next_rd;
-				bypass_reg <= insn_rd;
+			if (next_wr)
 				regfile[insn_rd] <= next_rd;
-			end
+			pc <= npc;
 		end
 
 		if (reset || reset_q) begin
-			pc <= RESET_ADDR;
-			bypass_reg <= 0;
+			pc <= RESET_ADDR - (reset ? 4 : 0);
 		end
 	end
 endmodule

@@ -1,2 +1,4 @@
 testbench.vcd
+firmware.o
+firmware.hex
 stupidrv_tb
