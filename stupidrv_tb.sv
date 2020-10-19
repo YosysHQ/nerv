@@ -5,9 +5,9 @@ module stupidrv_tb (
 localparam MEM_ADDR_WIDTH = 10;
 localparam TIMEOUT = (1<<10);
 
-wire clock;
-wire reset;
-wire stall;
+reg clock;
+reg reset = 1'b1;
+wire stall = 1'b0;
 
 wire [31:0] imem_addr;
 reg  [31:0] imem_data;
@@ -18,6 +18,8 @@ wire [ 3:0] dmem_wstrb;
 wire [31:0] dmem_wdata;
 reg  [31:0] dmem_rdata;
 
+always #5 clock = clock === 1'b0;
+always @(posedge clock) reset <= 0;
 
 reg [31:0] mem [0:(1<<MEM_ADDR_WIDTH)-1];
 
@@ -60,7 +62,7 @@ stupidrv dut (
 	.dmem_rdata(dmem_rdata)
 );
 
-reg [31:0] cycles;
+reg [31:0] cycles = 0;
 
 always @(posedge clock) begin
 	cycles <= cycles + 32'h1;
