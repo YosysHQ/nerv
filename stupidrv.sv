@@ -22,8 +22,8 @@ module stupidrv #(
 	assign imem_addr = npc;
 	assign insn = imem_data;
 
-	reg [31:0] bypass_value = 0;
-	reg [ 4:0] bypass_reg = 0;
+	reg [31:0] bypass_value;
+	reg [ 4:0] bypass_reg;
 
 	wire [31:0] rs1_value = !insn_rs1 ? 0 : insn_rs1 == bypass_reg ? bypass_value : regfile[insn_rs1];
 	wire [31:0] rs2_value = !insn_rs2 ? 0 : insn_rs2 == bypass_reg ? bypass_value : regfile[insn_rs2];
@@ -36,6 +36,9 @@ module stupidrv #(
 	wire [6:0] insn_opcode;
 
 	assign {insn_funct7, insn_rs2, insn_rs1, insn_funct3, insn_rd, insn_opcode} = insn;
+
+	wire [20:0] imm_j;
+	assign {imm_j[20], imm_j[10:1], imm_j[11], imm_j[19:12]} = insn[31:12];
 
 	localparam OPCODE_LOAD       = 7'b 00_000_11;
 	localparam OPCODE_STORE      = 7'b 01_000_11;
@@ -92,7 +95,17 @@ module stupidrv #(
 				next_rd = (insn[31:12] << 12) + pc;
 			end
 			OPCODE_JAL: begin
-				// TBD
+				npc = pc + imm_j;
+			end
+			OPCODE_JALR: begin
+				case (insn_funct3)
+					3'b 000 /* JALR */: begin
+						next_wr = 1;
+						next_rd = npc;
+						npc = rs1_value + $signed(insn[31:20]);
+					end
+					default: illinsn = 1;
+				endcase
 			end
 			OPCODE_BRANCH: begin
 				case (insn_funct3)
@@ -162,11 +175,15 @@ module stupidrv #(
 		end
 	end
 
+	reg reset_q;
+
 	always @(posedge clock) begin
+		reset_q <= reset;
+
 		bypass_value <= 32'd 0;
 		bypass_reg <= 5'd 0;
 
-		if (!stall) begin
+		if (!stall && !reset && !reset_q) begin
 			pc <= npc;
 			if (next_wr) begin
 				bypass_value <= next_rd;
@@ -175,7 +192,7 @@ module stupidrv #(
 			end
 		end
 
-		if (reset) begin
+		if (reset || reset_q) begin
 			pc <= RESET_ADDR;
 			bypass_reg <= 0;
 		end
