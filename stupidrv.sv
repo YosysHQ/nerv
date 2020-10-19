@@ -5,6 +5,30 @@ module stupidrv #(
 	input reset,
 	input stall,
 
+`ifdef ENABLE_RVFI
+	output reg        rvfi_valid,
+	output reg [63:0] rvfi_order,
+	output reg [31:0] rvfi_insn,
+	output reg        rvfi_trap,
+	output reg        rvfi_halt,
+	output reg        rvfi_intr,
+	output reg [ 1:0] rvfi_mode,
+	output reg [ 1:0] rvfi_ixl,
+	output reg [ 4:0] rvfi_rs1_addr,
+	output reg [ 4:0] rvfi_rs2_addr,
+	output reg [31:0] rvfi_rs1_rdata,
+	output reg [31:0] rvfi_rs2_rdata,
+	output reg [ 4:0] rvfi_rd_addr,
+	output reg [31:0] rvfi_rd_wdata,
+	output reg [31:0] rvfi_pc_rdata,
+	output reg [31:0] rvfi_pc_wdata,
+	output reg [31:0] rvfi_mem_addr,
+	output reg [ 3:0] rvfi_mem_rmask,
+	output reg [ 3:0] rvfi_mem_wmask,
+	output reg [31:0] rvfi_mem_rdata,
+	output reg [31:0] rvfi_mem_wdata,
+`endif
+
 	output [31:0] imem_addr,
 	input  [31:0] imem_data,
 
@@ -250,8 +274,10 @@ module stupidrv #(
 	end
 
 	reg reset_q;
-
 	reg [31:0] rdata;
+`ifdef ENABLE_RVFI
+	reg rvfi_pre_valid;
+`endif
 
 	always @* begin
 		rdata = dmem_rdata >> (8*mem_rd_func[4:3]);
@@ -269,15 +295,58 @@ module stupidrv #(
 		if (!stall && !reset && !reset_q) begin
 			if (mem_rd_enable_q) begin
 				regfile[mem_rd_reg_q] <= rdata;
+`ifdef ENABLE_RVFI
+				rvfi_pre_valid <= 0;
+`endif
 			end else begin
 				if (next_wr)
 					regfile[insn_rd] <= next_rd;
 				pc <= npc;
+`ifdef ENABLE_RVFI
+				rvfi_pre_valid <= 1;
+				rvfi_order <= rvfi_order + 1;
+				rvfi_insn <= insn;
+				rvfi_trap <= illinsn;
+				rvfi_halt <= illinsn;
+				rvfi_intr <= 0;
+				rvfi_mode <= 3;
+				rvfi_ixl <= 1;
+				rvfi_rs1_addr <= insn_rs1;
+				rvfi_rs2_addr <= insn_rs2;
+				rvfi_rs1_rdata <= rs1_value;
+				rvfi_rs2_rdata <= rs2_value;
+				rvfi_rd_addr <= next_wr ? insn_rd : 0;
+				rvfi_rd_wdata <= next_wr ? next_rd : 0;
+				rvfi_pc_rdata <= pc;
+				rvfi_pc_wdata <= npc;
+				rvfi_mem_addr <= dmem_addr;
+				case ({mem_rd_enable, insn_funct3})
+					4'b 1_000 /* LB  */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
+					4'b 1_001 /* LH  */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
+					4'b 1_010 /* LW  */: begin rvfi_mem_rmask <= 4'b 1111 << mem_rd_func[4:3]; end
+					4'b 1_100 /* LBU */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
+					4'b 1_101 /* LHU */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
+					default: rvfi_mem_rmask <= 0;
+				endcase
+				rvfi_mem_wmask <= dmem_wstrb;
+				rvfi_mem_wdata <= dmem_wdata;
+`endif
 			end
 		end
 
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
+`ifdef ENABLE_RVFI
+			rvfi_pre_valid <= 0;
+			rvfi_order <= 0;
+`endif
 		end
 	end
+
+`ifdef ENABLE_RVFI
+	always @* begin
+		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q;
+		rvfi_mem_rdata = dmem_rdata;
+	end
+`endif
 endmodule
