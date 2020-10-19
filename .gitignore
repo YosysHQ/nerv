@@ -1,4 +1,7 @@
+/checks/
 testbench.vcd
 firmware.o
 firmware.hex
 stupidrv_tb
+disasm.o
+disasm.s

@@ -4,6 +4,7 @@ module stupidrv #(
 	input clock,
 	input reset,
 	input stall,
+	output trap,
 
 `ifdef ENABLE_RVFI
 	output reg        rvfi_valid,
@@ -101,7 +102,7 @@ module stupidrv #(
 	assign imm_s[11:5] = insn_funct7, imm_s[4:0] = insn_rd;
 
 	wire [12:0] imm_b;
-	assign {imm_b[12], imm_b[10:5]} = insn_funct7, {imm_b[4:1], imm_b[11]} = insn_rd;
+	assign {imm_b[12], imm_b[10:5]} = insn_funct7, {imm_b[4:1], imm_b[11]} = insn_rd, imm_b[0] = 1'b0;
 
 	wire [20:0] imm_j;
 	assign {imm_j[20], imm_j[10:1], imm_j[11], imm_j[19:12], imm_j[0]} = {insn[31:12], 1'b0};
@@ -150,6 +151,16 @@ module stupidrv #(
 	reg [31:0] next_rd;
 	reg illinsn;
 
+	reg trapped;
+	assign trap = trapped;
+
+	always @(posedge clock) begin
+		if (reset)
+			trapped <= 0;
+		else if (illinsn)
+			trapped <= 1;
+	end
+
 	always @* begin
 		npc = pc + 4;
 		next_wr = 0;
@@ -164,6 +175,7 @@ module stupidrv #(
 		mem_rd_enable = 0;
 		mem_rd_addr = 'hx;
 		mem_rd_reg = 'hx;
+		mem_rd_func = 'hx;
 
 		case (insn_opcode)
 			OPCODE_LUI: begin
@@ -175,17 +187,27 @@ module stupidrv #(
 				next_rd = (insn[31:12] << 12) + pc;
 			end
 			OPCODE_JAL: begin
+				next_wr = 1;
+				next_rd = npc;
 				npc = pc + imm_j_sext;
+				if (npc & 32'b 11) begin
+					illinsn = 1;
+					npc = npc & ~32'b 11;
+				end
 			end
 			OPCODE_JALR: begin
 				case (insn_funct3)
 					3'b 000 /* JALR */: begin
 						next_wr = 1;
 						next_rd = npc;
-						npc = rs1_value + imm_i_sext;
+						npc = (rs1_value + imm_i_sext) & ~32'b 1;
 					end
 					default: illinsn = 1;
 				endcase
+				if (npc & 32'b 11) begin
+					illinsn = 1;
+					npc = npc & ~32'b 11;
+				end
 			end
 			OPCODE_BRANCH: begin
 				case (insn_funct3)
@@ -197,6 +219,10 @@ module stupidrv #(
 					3'b 111 /* BGEU */: begin if (rs1_value >= rs2_value) npc = pc + imm_b_sext; end
 					default: illinsn = 1;
 				endcase
+				if (npc & 32'b 11) begin
+					illinsn = 1;
+					npc = npc & ~32'b 11;
+				end
 			end
 			OPCODE_LOAD: begin
 				case (insn_funct3)
@@ -249,7 +275,7 @@ module stupidrv #(
 				endcase
 			end
 			OPCODE_OP: begin
-				casez ({insn_funct7, insn_funct3})
+				case ({insn_funct7, insn_funct3})
 					10'b 0000000_000 /* ADD  */: begin next_wr = 1; next_rd = rs1_value + rs2_value; end
 					10'b 0100000_000 /* SUB  */: begin next_wr = 1; next_rd = rs1_value - rs2_value; end
 					10'b 0000000_001 /* SLL  */: begin next_wr = 1; next_rd = rs1_value << rs2_value[4:0]; end
@@ -292,7 +318,7 @@ module stupidrv #(
 	always @(posedge clock) begin
 		reset_q <= reset;
 
-		if (!stall && !reset && !reset_q) begin
+		if (!trapped && !stall && !reset && !reset_q) begin
 			if (mem_rd_enable_q) begin
 				regfile[mem_rd_reg_q] <= rdata;
 `ifdef ENABLE_RVFI
@@ -316,7 +342,7 @@ module stupidrv #(
 				rvfi_rs1_rdata <= rs1_value;
 				rvfi_rs2_rdata <= rs2_value;
 				rvfi_rd_addr <= next_wr ? insn_rd : 0;
-				rvfi_rd_wdata <= next_wr ? next_rd : 0;
+				rvfi_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
 				rvfi_pc_rdata <= pc;
 				rvfi_pc_wdata <= npc;
 				rvfi_mem_addr <= dmem_addr;
