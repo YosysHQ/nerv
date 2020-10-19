@@ -1,16 +1,16 @@
+TOOLCHAIN_PREFIX?=riscv64-unknown-elf-
+
 test: firmware.hex stupidrv_tb
 	vvp -N stupidrv_tb +vcd
 
-firmware.o: firmware.s
-	riscv64-unknown-elf-as -march=rv32i -o firmware.o firmware.s
-	riscv64-unknown-elf-objdump -M numeric,no-aliases -d firmware.o
+firmware.elf: firmware.s firmware.c
+	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -Os -Wall -Wextra -o $@ $^ -ffreestanding -nostdlib
 
-firmware.hex: firmware.o
-	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width=4 \
-			--reverse-bytes=4 -j .text firmware.o firmware.hex
+firmware.hex: firmware.elf
+	$(TOOLCHAIN_PREFIX)objcopy -O verilog --verilog-data-width=4 --reverse-bytes=4 --change-section-address .text=0 --set-start 0 $< $@
 
 stupidrv_tb: stupidrv_tb.sv stupidrv.sv
 	iverilog -o stupidrv_tb stupidrv_tb.sv stupidrv.sv
 
 clean:
-	rm -f firmware.o firmware.hex stupidrv_tb
+	rm -f firmware.elf firmware.hex stupidrv_tb
