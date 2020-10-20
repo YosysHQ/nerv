@@ -5,7 +5,7 @@ localparam TIMEOUT = (1<<10);
 
 reg clock;
 reg reset = 1'b1;
-wire stall = 1'b0;
+reg stall = 1'b0;
 
 wire [31:0] imem_addr;
 reg  [31:0] imem_data;
@@ -35,6 +35,12 @@ always @(posedge clock) begin
 	end
 end
 
+`ifdef STALL
+always @(posedge clock) begin
+	stall <= $random;
+end
+`endif
+
 always @(posedge clock) begin
 	if (imem_addr >= (1<<MEM_ADDR_WIDTH)) begin
 		$display("Memory access out of range: imem_addr = 0x%08x", imem_addr);
@@ -48,34 +54,36 @@ integer i;
 always @(posedge clock) begin
 	out <= 32'h 0;
 	out_valid <= 1'b0;
-	imem_data <= {
-		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
-		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
-		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
-		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
-	};
-
-	if (dmem_valid) begin
-		dmem_rdata <= {
-			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
-			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
-			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
-			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
+	if (!stall && !reset) begin
+		imem_data <= {
+			mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
+			mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
+			mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
+			mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
 		};
-		for (i=0;i<4;i=i+1) begin
-			if (dmem_wstrb[i]) begin
-				if (wr_in_mem_range) begin
-					mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], i[1:0]}] <= dmem_wdata[(i*8)+: 8];
+
+		if (dmem_valid) begin
+			dmem_rdata <= {
+				mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
+				mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
+				mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
+				mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
+			};
+			for (i=0;i<4;i=i+1) begin
+				if (dmem_wstrb[i]) begin
+					if (wr_in_mem_range) begin
+						mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], i[1:0]}] <= dmem_wdata[(i*8)+: 8];
+					end
+					if (wr_in_output) begin
+						out[(i*8)+: 8] <= dmem_wdata[(i*8)+: 8];
+						out_valid <= 1'b1;
+					end
+					dmem_rdata <= 'hx;
 				end
-				if (wr_in_output) begin
-					out[(i*8)+: 8] <= dmem_wdata[(i*8)+: 8];
-					out_valid <= 1'b1;
-				end
-				dmem_rdata <= 'hx;
 			end
+		end else begin
+			dmem_rdata <= 32'h XXXX_XXXX;
 		end
-	end else begin
-		dmem_rdata <= 32'h XXXX_XXXX;
 	end
 end
 

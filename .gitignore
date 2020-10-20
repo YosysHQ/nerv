@@ -7,3 +7,4 @@
 /disasm.o
 /disasm.s
 /testbench
+/gtkwave.log

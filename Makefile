@@ -10,13 +10,16 @@ firmware.hex: firmware.elf
 	$(TOOLCHAIN_PREFIX)objcopy -O verilog $< $@
 
 testbench: testbench.sv nerv.sv
-	iverilog -o testbench -D NERV_DBGREGS testbench.sv nerv.sv
+	iverilog -o testbench -D STALL -D NERV_DBGREGS testbench.sv nerv.sv
 
 check:
 	python3 ../../checks/genchecks.py
 	$(MAKE) -C checks
 	bash cexdata.sh
 
+show:
+	gtkwave testbench.vcd testbench.gtkw >> gtkwave.log 2>&1 &
+
 clean:
-	rm -f firmware.elf firmware.hex testbench
-	rm -rf checks cexdata
+	rm -rf firmware.elf firmware.hex testbench testbench.vcd gtkwave.log
+	rm -rf disasm.o disasm.s checks/ cexdata-*.zip cexdata-*/
