@@ -1,6 +1,5 @@
 /checks/
-/cexdata-*.zip
-/cexdata-*/
+/cexdata/
 /testbench.vcd
 /firmware.elf
 /firmware.hex

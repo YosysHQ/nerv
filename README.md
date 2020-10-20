@@ -23,5 +23,4 @@ cd riscv-formal/cores/
 git clone https://github.com/SymbioticEDA/nerv.git
 cd nerv
 make -j8 check
-cat cexdata-*/status.txt
 ```

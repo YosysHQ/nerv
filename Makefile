@@ -33,10 +33,11 @@ check:
 	python3 ../../checks/genchecks.py
 	$(MAKE) -C checks
 	bash cexdata.sh
+	cat cexdata/status.txt
 
 show:
 	gtkwave testbench.vcd testbench.gtkw >> gtkwave.log 2>&1 &
 
 clean:
 	rm -rf firmware.elf firmware.hex testbench testbench.vcd gtkwave.log
-	rm -rf disasm.o disasm.s checks/ cexdata-*.zip cexdata-*/
+	rm -rf disasm.o disasm.s checks/ cexdata/
