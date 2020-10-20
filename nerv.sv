@@ -1,4 +1,4 @@
-module stupidrv #(
+module nerv #(
 	parameter [31:0] RESET_ADDR = 32'h 0000_0000
 ) (
 	input clock,

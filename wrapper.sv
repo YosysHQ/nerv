@@ -14,7 +14,7 @@ module rvfi_wrapper (
 	(* keep *) wire [ 3:0] dmem_wstrb;
 	(* keep *) wire [31:0] dmem_wdata;
 
-	stupidrv uut (
+	nerv uut (
 		.clock      (clock    ),
 		.reset      (reset    ),
 		.stall      (stall    ),
@@ -31,7 +31,7 @@ module rvfi_wrapper (
 		`RVFI_CONN
 	);
 
-`ifdef STUPIDRV_FAIRNESS
+`ifdef NERV_FAIRNESS
 	reg [2:0] stalled = 0;
 	always @(posedge clock) begin
 		stalled <= {stalled, stall};

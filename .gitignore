@@ -2,6 +2,6 @@
 testbench.vcd
 firmware.elf
 firmware.hex
-stupidrv_tb
 disasm.o
 disasm.s
+nerv_tb

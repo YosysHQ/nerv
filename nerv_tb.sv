@@ -1,6 +1,4 @@
-module stupidrv_tb (
-
-);
+module nerv_tb;
 
 localparam MEM_ADDR_WIDTH = 16;
 localparam TIMEOUT = (1<<10);
@@ -80,11 +78,11 @@ initial begin
 	$readmemh("firmware.hex", mem);
 	if ($test$plusargs("vcd")) begin
 		$dumpfile("testbench.vcd");
-		$dumpvars(0, stupidrv_tb);
+		$dumpvars(0, nerv_tb);
 	end
 end
 
-stupidrv dut (
+nerv dut (
 	.clock(clock),
 	.reset(reset),
 	.stall(stall),

@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
 [*] Tue Oct 20 15:53:09 2020
 [*]
-[dumpfile] "/home/claire/Work/riscv-formal/cores/stupidrv/checks/insn_add_ch0/engine_0/trace.vcd"
+[dumpfile] "/home/claire/Work/riscv-formal/cores/nerv/checks/insn_add_ch0/engine_0/trace.vcd"
 [dumpfile_mtime] "Tue Oct 20 15:48:54 2020"
 [dumpfile_size] 64061
-[savefile] "/home/claire/Work/riscv-formal/cores/stupidrv/trace.gtkw"
+[savefile] "/home/claire/Work/riscv-formal/cores/nerv/trace.gtkw"
 [timestart] 0
 [size] 1259 841
 [pos] 1117 34
