@@ -27,7 +27,12 @@ wire wr_in_output = (dmem_addr == 32'h 02000000);
 reg [31:0] out;
 reg out_valid;
 always @(posedge clock) begin
-	if (out_valid) $display("Output: %d", out);
+	if (out_valid) begin
+		$write("%c", out[7:0]);
+`ifndef VERILATOR
+		$fflush();
+`endif
+	end
 end
 
 always @(posedge clock) begin
