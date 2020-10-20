@@ -1,0 +1,39 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Tue Oct 20 15:53:09 2020
+[*]
+[dumpfile] "/home/claire/Work/riscv-formal/cores/stupidrv/checks/insn_add_ch0/engine_0/trace.vcd"
+[dumpfile_mtime] "Tue Oct 20 15:48:54 2020"
+[dumpfile_size] 64061
+[savefile] "/home/claire/Work/riscv-formal/cores/stupidrv/trace.gtkw"
+[timestart] 0
+[size] 1259 841
+[pos] 1117 34
+*-5.139064 106 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] rvfi_testbench.
+[treeopen] rvfi_testbench.wrapper.
+[sst_width] 240
+[signals_width] 287
+[sst_expanded] 1
+[sst_vpaned_height] 235
+@25
+smt_step
+@200
+-
+-Core
+@28
+rvfi_testbench.wrapper.uut.clock
+rvfi_testbench.wrapper.uut.reset
+rvfi_testbench.wrapper.uut.stall
+rvfi_testbench.wrapper.uut.trap
+@200
+-
+-Checker
+@28
+rvfi_testbench.checker_inst.rvfi_valid
+rvfi_testbench.checker_inst.rvfi_trap
+@22
+rvfi_testbench.checker_inst.rvfi_insn[31:0]
+rvfi_testbench.wrapper.uut.rvfi_pc_rdata[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

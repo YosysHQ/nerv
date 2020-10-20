@@ -299,6 +299,8 @@ module stupidrv #(
 	reg [31:0] rdata;
 `ifdef ENABLE_RVFI
 	reg rvfi_pre_valid;
+	reg [ 4:0] rvfi_pre_rd_addr;
+	reg [31:0] rvfi_pre_rd_wdata;
 `endif
 
 	always @* begin
@@ -339,8 +341,8 @@ module stupidrv #(
 				rvfi_rs2_addr <= insn_rs2;
 				rvfi_rs1_rdata <= rs1_value;
 				rvfi_rs2_rdata <= rs2_value;
-				rvfi_rd_addr <= next_wr ? insn_rd : 0;
-				rvfi_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
+				rvfi_pre_rd_addr <= next_wr ? insn_rd : 0;
+				rvfi_pre_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
 				rvfi_pc_rdata <= pc;
 				rvfi_pc_wdata <= npc;
 				rvfi_mem_addr <= dmem_addr;
@@ -370,6 +372,13 @@ module stupidrv #(
 
 `ifdef ENABLE_RVFI
 	always @* begin
+		if (mem_rd_enable_q) begin
+			rvfi_rd_addr = mem_rd_reg_q;
+			rvfi_rd_wdata = rdata;
+		end else begin
+			rvfi_rd_addr = rvfi_pre_rd_addr;
+			rvfi_rd_wdata = rvfi_pre_rd_wdata;
+		end
 		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q;
 		rvfi_mem_rdata = dmem_rdata;
 	end
