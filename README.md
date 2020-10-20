@@ -1,7 +1,7 @@
-NERV - Naive Educational RISC-V
-===============================
+NERV - Naive Educational RISC-V Processor
+=========================================
 
-NERV is a simple single-stage RV32I processor.
+NERV is a very simple single-stage RV32I processor.
 
 
 Running the simulation testbench
