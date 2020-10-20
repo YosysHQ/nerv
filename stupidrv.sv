@@ -155,10 +155,6 @@ module stupidrv #(
 	assign trap = trapped;
 
 	always @(posedge clock) begin
-		if (reset)
-			trapped <= 0;
-		else if (illinsn)
-			trapped <= 1;
 	end
 
 	always @* begin
@@ -319,6 +315,8 @@ module stupidrv #(
 		reset_q <= reset;
 
 		if (!trapped && !stall && !reset && !reset_q) begin
+			if (illinsn)
+				trapped <= 1;
 			if (mem_rd_enable_q) begin
 				regfile[mem_rd_reg_q] <= rdata;
 `ifdef ENABLE_RVFI
@@ -362,6 +360,7 @@ module stupidrv #(
 
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
+			trapped <= 0;
 `ifdef ENABLE_RVFI
 			rvfi_pre_valid <= 0;
 			rvfi_order <= 0;
