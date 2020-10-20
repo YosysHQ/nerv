@@ -6,4 +6,4 @@
 /firmware.hex
 /disasm.o
 /disasm.s
-/nerv_tb
+/testbench

@@ -1,4 +1,4 @@
-module nerv_tb;
+module testbench;
 
 localparam MEM_ADDR_WIDTH = 16;
 localparam TIMEOUT = (1<<10);
@@ -78,7 +78,7 @@ initial begin
 	$readmemh("firmware.hex", mem);
 	if ($test$plusargs("vcd")) begin
 		$dumpfile("testbench.vcd");
-		$dumpvars(0, nerv_tb);
+		$dumpvars(0, testbench);
 	end
 end
 
