@@ -10,7 +10,7 @@ firmware.hex: firmware.elf
 	$(TOOLCHAIN_PREFIX)objcopy -O verilog $< $@
 
 testbench: testbench.sv nerv.sv
-	iverilog -o testbench testbench.sv nerv.sv
+	iverilog -o testbench -D NERV_DBGREGS testbench.sv nerv.sv
 
 check:
 	python3 ../../checks/genchecks.py

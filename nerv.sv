@@ -6,7 +6,7 @@ module nerv #(
 	input stall,
 	output trap,
 
-`ifdef ENABLE_RVFI
+`ifdef NERV_RVFI
 	output reg        rvfi_valid,
 	output reg [63:0] rvfi_order,
 	output reg [31:0] rvfi_insn,
@@ -222,39 +222,40 @@ module nerv #(
 			end
 			OPCODE_LOAD: begin
 				case (insn_funct3)
-					3'b 000 /* LB  */: begin mem_rd_enable = 1; mem_rd_addr = rs1_value + imm_i_sext; mem_rd_reg = insn_rd; mem_rd_func = insn_funct3; end
-					3'b 001 /* LH  */: begin mem_rd_enable = 1; mem_rd_addr = rs1_value + imm_i_sext; mem_rd_reg = insn_rd; mem_rd_func = insn_funct3; end
-					3'b 010 /* LW  */: begin mem_rd_enable = 1; mem_rd_addr = rs1_value + imm_i_sext; mem_rd_reg = insn_rd; mem_rd_func = insn_funct3; end
-					3'b 100 /* LBU */: begin mem_rd_enable = 1; mem_rd_addr = rs1_value + imm_i_sext; mem_rd_reg = insn_rd; mem_rd_func = insn_funct3; end
-					3'b 101 /* LHU */: begin mem_rd_enable = 1; mem_rd_addr = rs1_value + imm_i_sext; mem_rd_reg = insn_rd; mem_rd_func = insn_funct3; end
+					3'b 000 /* LB  */,
+					3'b 001 /* LH  */,
+					3'b 010 /* LW  */,
+					3'b 100 /* LBU */,
+					3'b 101 /* LHU */: begin
+						mem_rd_enable = 1;
+						mem_rd_addr = rs1_value + imm_i_sext;
+						mem_rd_reg = insn_rd;
+						mem_rd_func = {mem_rd_addr[1:0], insn_funct3};
+						mem_rd_addr = {mem_rd_addr[31:2], 2'b 00};
+					end
 					default: illinsn = 1;
 				endcase
-				if (mem_rd_enable && mem_rd_addr[0]) begin
-					mem_rd_addr = mem_rd_addr + 1;
-					mem_rd_func = mem_rd_func | 5'b 01_000;
-				end
-				if (mem_rd_enable && mem_rd_addr[1]) begin
-					mem_rd_addr = mem_rd_addr + 2;
-					mem_rd_func = mem_rd_func | 5'b 10_000;
-				end
 			end
 			OPCODE_STORE: begin
 				case (insn_funct3)
-					3'b 000 /* SB  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 0001; end
-					3'b 001 /* SH  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 0011; end
-					3'b 010 /* SW  */: begin mem_wr_enable = 1; mem_wr_addr = rs1_value + imm_s_sext; mem_wr_data = rs2_value; mem_wr_strb = 4'b 1111; end
+					3'b 000 /* SB */,
+					3'b 001 /* SH */,
+					3'b 010 /* SW */: begin
+						mem_wr_enable = 1;
+						mem_wr_addr = rs1_value + imm_s_sext;
+						mem_wr_data = rs2_value;
+						mem_wr_strb = 4'b 1111;
+						case (insn_funct3)
+							3'b 000 /* SB  */: begin mem_wr_strb = 4'b 0001; end
+							3'b 001 /* SH  */: begin mem_wr_strb = 4'b 0011; end
+							3'b 010 /* SW  */: begin mem_wr_strb = 4'b 1111; end
+						endcase
+						mem_wr_data = mem_wr_data << (8*mem_wr_addr[1:0]);
+						mem_wr_strb = mem_wr_strb << mem_wr_addr[1:0];
+						mem_wr_addr = {mem_wr_addr[31:2], 2'b 00};
+					end
 					default: illinsn = 1;
 				endcase
-				if (mem_wr_enable && mem_wr_addr[0] && !mem_wr_strb[3]) begin
-					mem_wr_addr = mem_wr_addr + 1;
-					mem_wr_data = mem_wr_data << 8;
-					mem_wr_strb = mem_wr_strb << 1;
-				end
-				if (mem_wr_enable && mem_wr_addr[1] && !mem_wr_strb[3:2]) begin
-					mem_wr_addr = mem_wr_addr + 2;
-					mem_wr_data = mem_wr_data << 16;
-					mem_wr_strb = mem_wr_strb << 2;
-				end
 			end
 			OPCODE_OP_IMM: begin
 				casez ({insn_funct7, insn_funct3})
@@ -296,20 +297,20 @@ module nerv #(
 	end
 
 	reg reset_q;
-	reg [31:0] rdata;
-`ifdef ENABLE_RVFI
+	reg [31:0] mem_rdata;
+`ifdef NERV_RVFI
 	reg rvfi_pre_valid;
 	reg [ 4:0] rvfi_pre_rd_addr;
 	reg [31:0] rvfi_pre_rd_wdata;
 `endif
 
 	always @* begin
-		rdata = dmem_rdata >> (8*mem_rd_func[4:3]);
+		mem_rdata = dmem_rdata >> (8*mem_rd_func_q[4:3]);
 		case (mem_rd_func_q[2:0])
-			3'b 000 /* LB  */: begin rdata = $signed(rdata[7:0]); end
-			3'b 001 /* LH  */: begin rdata = $signed(rdata[15:0]); end
-			3'b 100 /* LBU */: begin rdata = rdata[7:0]; end
-			3'b 101 /* LHU */: begin rdata = rdata[15:0]; end
+			3'b 000 /* LB  */: begin mem_rdata = $signed(mem_rdata[7:0]); end
+			3'b 001 /* LH  */: begin mem_rdata = $signed(mem_rdata[15:0]); end
+			3'b 100 /* LBU */: begin mem_rdata = mem_rdata[7:0]; end
+			3'b 101 /* LHU */: begin mem_rdata = mem_rdata[15:0]; end
 		endcase
 	end
 
@@ -319,16 +320,12 @@ module nerv #(
 		if (!trapped && !stall && !reset && !reset_q) begin
 			if (illinsn)
 				trapped <= 1;
-			if (mem_rd_enable_q) begin
-				regfile[mem_rd_reg_q] <= rdata;
-`ifdef ENABLE_RVFI
-				rvfi_pre_valid <= 0;
-`endif
-			end else begin
-				if (next_wr)
-					regfile[insn_rd] <= next_rd;
+			if (!mem_rd_enable_q)
 				pc <= npc;
-`ifdef ENABLE_RVFI
+`ifdef NERV_RVFI
+			if (mem_rd_enable_q) begin
+				rvfi_pre_valid <= 0;
+			end else begin
 				rvfi_pre_valid <= 1;
 				rvfi_order <= rvfi_order + 1;
 				rvfi_insn <= insn;
@@ -356,25 +353,27 @@ module nerv #(
 				endcase
 				rvfi_mem_wmask <= dmem_wstrb;
 				rvfi_mem_wdata <= dmem_wdata;
-`endif
 			end
+`endif
+			if (mem_rd_enable_q || next_wr)
+				regfile[mem_rd_enable_q ? mem_rd_reg_q : insn_rd] <= mem_rd_enable_q ? mem_rdata : next_rd;
 		end
 
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
 			trapped <= 0;
-`ifdef ENABLE_RVFI
+`ifdef NERV_RVFI
 			rvfi_pre_valid <= 0;
 			rvfi_order <= 0;
 `endif
 		end
 	end
 
-`ifdef ENABLE_RVFI
+`ifdef NERV_RVFI
 	always @* begin
 		if (mem_rd_enable_q) begin
 			rvfi_rd_addr = mem_rd_reg_q;
-			rvfi_rd_wdata = rdata;
+			rvfi_rd_wdata = mem_rdata;
 		end else begin
 			rvfi_rd_addr = rvfi_pre_rd_addr;
 			rvfi_rd_wdata = rvfi_pre_rd_wdata;
@@ -382,5 +381,40 @@ module nerv #(
 		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q;
 		rvfi_mem_rdata = dmem_rdata;
 	end
+`endif
+
+`ifdef NERV_DBGREGS
+	wire [31:0] dbg_reg_x0  = 0;
+	wire [31:0] dbg_reg_x1  = regfile[1];
+	wire [31:0] dbg_reg_x2  = regfile[2];
+	wire [31:0] dbg_reg_x3  = regfile[3];
+	wire [31:0] dbg_reg_x4  = regfile[4];
+	wire [31:0] dbg_reg_x5  = regfile[5];
+	wire [31:0] dbg_reg_x6  = regfile[6];
+	wire [31:0] dbg_reg_x7  = regfile[7];
+	wire [31:0] dbg_reg_x8  = regfile[8];
+	wire [31:0] dbg_reg_x9  = regfile[9];
+	wire [31:0] dbg_reg_x10 = regfile[10];
+	wire [31:0] dbg_reg_x11 = regfile[11];
+	wire [31:0] dbg_reg_x12 = regfile[12];
+	wire [31:0] dbg_reg_x13 = regfile[13];
+	wire [31:0] dbg_reg_x14 = regfile[14];
+	wire [31:0] dbg_reg_x15 = regfile[15];
+	wire [31:0] dbg_reg_x16 = regfile[16];
+	wire [31:0] dbg_reg_x17 = regfile[17];
+	wire [31:0] dbg_reg_x18 = regfile[18];
+	wire [31:0] dbg_reg_x19 = regfile[19];
+	wire [31:0] dbg_reg_x20 = regfile[20];
+	wire [31:0] dbg_reg_x21 = regfile[21];
+	wire [31:0] dbg_reg_x22 = regfile[22];
+	wire [31:0] dbg_reg_x23 = regfile[23];
+	wire [31:0] dbg_reg_x24 = regfile[24];
+	wire [31:0] dbg_reg_x25 = regfile[25];
+	wire [31:0] dbg_reg_x26 = regfile[26];
+	wire [31:0] dbg_reg_x27 = regfile[27];
+	wire [31:0] dbg_reg_x28 = regfile[28];
+	wire [31:0] dbg_reg_x29 = regfile[29];
+	wire [31:0] dbg_reg_x30 = regfile[30];
+	wire [31:0] dbg_reg_x31 = regfile[31];
 `endif
 endmodule
