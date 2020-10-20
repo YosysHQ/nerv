@@ -240,14 +240,14 @@ module nerv #(
 				end
 			end
 			OPCODE_LOAD: begin
-				case (insn_funct3)
-					3'b 000 /* LB  */,
-					3'b 001 /* LH  */,
-					3'b 010 /* LW  */,
-					3'b 100 /* LBU */,
-					3'b 101 /* LHU */: begin
+				mem_rd_addr = rs1_value + imm_i_sext;
+				casez ({insn_funct3, mem_rd_addr[1:0]})
+					5'b 000_zz /* LB  */,
+					5'b 001_z0 /* LH  */,
+					5'b 010_00 /* LW  */,
+					5'b 100_zz /* LBU */,
+					5'b 101_z0 /* LHU */: begin
 						mem_rd_enable = 1;
-						mem_rd_addr = rs1_value + imm_i_sext;
 						mem_rd_reg = insn_rd;
 						mem_rd_func = {mem_rd_addr[1:0], insn_funct3};
 						mem_rd_addr = {mem_rd_addr[31:2], 2'b 00};
@@ -256,12 +256,12 @@ module nerv #(
 				endcase
 			end
 			OPCODE_STORE: begin
-				case (insn_funct3)
-					3'b 000 /* SB */,
-					3'b 001 /* SH */,
-					3'b 010 /* SW */: begin
+				mem_wr_addr = rs1_value + imm_s_sext;
+				casez ({insn_funct3, mem_wr_addr[1:0]})
+					5'b 000_zz /* SB */,
+					5'b 001_z0 /* SH */,
+					5'b 010_00 /* SW */: begin
 						mem_wr_enable = 1;
-						mem_wr_addr = rs1_value + imm_s_sext;
 						mem_wr_data = rs2_value;
 						mem_wr_strb = 4'b 1111;
 						case (insn_funct3)
