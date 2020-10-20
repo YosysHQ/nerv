@@ -21,7 +21,7 @@ reg  [31:0] dmem_rdata;
 always #5 clock = clock === 1'b0;
 always @(posedge clock) reset <= 0;
 
-reg [31:0] mem [0:(1<<MEM_ADDR_WIDTH)-1];
+reg [7:0] mem [0:(1<<MEM_ADDR_WIDTH)-1];
 
 wire wr_in_mem_range = (dmem_addr[31:2] < (1<<MEM_ADDR_WIDTH));
 wire wr_in_output = (dmem_addr == 32'h 02000000);
@@ -33,7 +33,7 @@ always @(posedge clock) begin
 end
 
 always @(posedge clock) begin
-	if (imem_addr[31:2] >= (1<<MEM_ADDR_WIDTH)) begin
+	if (imem_addr >= (1<<MEM_ADDR_WIDTH)) begin
 		$display("Memory access out of range: imem_addr = 0x%08x", imem_addr);
 	end
 	if (dmem_valid && !(wr_in_mem_range || wr_in_output)) begin
@@ -45,19 +45,30 @@ integer i;
 always @(posedge clock) begin
 	out <= 32'h 0;
 	out_valid <= 1'b0;
-	imem_data <= mem[imem_addr[MEM_ADDR_WIDTH+1:2]];
+	imem_data <= {
+		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
+		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
+		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
+		mem[{imem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
+	};
 
 	if (dmem_valid) begin
-		dmem_rdata <= mem[dmem_addr[MEM_ADDR_WIDTH+1:2]];
+		dmem_rdata <= {
+			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b11}],
+			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b10}],
+			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b01}],
+			mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], 2'b00}]
+		};
 		for (i=0;i<4;i=i+1) begin
 			if (dmem_wstrb[i]) begin
 				if (wr_in_mem_range) begin
-					mem[dmem_addr[MEM_ADDR_WIDTH+1:2]][(i*8)+: 8] <= dmem_wdata[(i*8)+: 8];
+					mem[{dmem_addr[MEM_ADDR_WIDTH-1:2], i[1:0]}] <= dmem_wdata[(i*8)+: 8];
 				end
 				if (wr_in_output) begin
 					out[(i*8)+: 8] <= dmem_wdata[(i*8)+: 8];
 					out_valid <= 1'b1;
 				end
+				dmem_rdata <= 'hx;
 			end
 		end
 	end else begin
@@ -66,7 +77,7 @@ always @(posedge clock) begin
 end
 
 initial begin
-	$readmemh("firmware.hex", mem, 0, 1<<MEM_ADDR_WIDTH - 1);
+	$readmemh("firmware.hex", mem);
 	if ($test$plusargs("vcd")) begin
 		$dumpfile("testbench.vcd");
 		$dumpvars(0, stupidrv_tb);

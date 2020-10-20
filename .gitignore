@@ -1,6 +1,6 @@
 /checks/
 testbench.vcd
-firmware.o
+firmware.elf
 firmware.hex
 stupidrv_tb
 disasm.o
