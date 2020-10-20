@@ -4,10 +4,10 @@ test: firmware.hex stupidrv_tb
 	vvp -N stupidrv_tb +vcd
 
 firmware.elf: firmware.s firmware.c
-	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -Os -Wall -Wextra -o $@ $^ -ffreestanding -nostdlib
+	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -Os -Wall -Wextra -Wl,-Bstatic,-T,sections.lds,--strip-debug -ffreestanding -nostdlib -o $@ $^
 
 firmware.hex: firmware.elf
-	$(TOOLCHAIN_PREFIX)objcopy -O verilog --verilog-data-width=4 --reverse-bytes=4 --change-section-address .text=0 --set-start 0 $< $@
+	$(TOOLCHAIN_PREFIX)objcopy -O verilog --verilog-data-width=4 --reverse-bytes=4 $< $@
 
 stupidrv_tb: stupidrv_tb.sv stupidrv.sv
 	iverilog -o stupidrv_tb stupidrv_tb.sv stupidrv.sv
