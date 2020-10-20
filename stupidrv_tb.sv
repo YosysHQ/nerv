@@ -2,7 +2,7 @@ module stupidrv_tb (
 
 );
 
-localparam MEM_ADDR_WIDTH = 14;
+localparam MEM_ADDR_WIDTH = 16;
 localparam TIMEOUT = (1<<10);
 
 reg clock;
