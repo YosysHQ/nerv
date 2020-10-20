@@ -12,5 +12,11 @@ firmware.hex: firmware.elf
 nerv_tb: nerv_tb.sv nerv.sv
 	iverilog -o nerv_tb nerv_tb.sv nerv.sv
 
+check:
+	python3 ../../checks/genchecks.py
+	$(MAKE) -C checks
+	bash cexdata.sh
+
 clean:
 	rm -f firmware.elf firmware.hex nerv_tb
+	rm -rf checks cexdata

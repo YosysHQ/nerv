@@ -1,7 +1,9 @@
 /checks/
-testbench.vcd
-firmware.elf
-firmware.hex
-disasm.o
-disasm.s
-nerv_tb
+/cexdata-*.zip
+/cexdata-*/
+/testbench.vcd
+/firmware.elf
+/firmware.hex
+/disasm.o
+/disasm.s
+/nerv_tb
