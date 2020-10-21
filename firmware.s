@@ -81,8 +81,6 @@ end_init_bss:
 
 # call main
 call main
-end:
-j end
 
-
-
+# halt
+ebreak

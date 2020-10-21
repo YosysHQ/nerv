@@ -100,7 +100,7 @@ module nerv #(
 		imem_addr_q <= imem_addr;
 	end
 
-	assign imem_addr = (stall || mem_rd_enable_q) ? imem_addr_q : npc;
+	assign imem_addr = (stall || trap || mem_rd_enable_q) ? imem_addr_q : npc;
 	assign insn = imem_data;
 
 	wire [31:0] rs1_value = !insn_rs1 ? 0 : regfile[insn_rs1];
