@@ -392,7 +392,7 @@ module nerv #(
 	always @* begin
 		if (mem_rd_enable_q) begin
 			rvfi_rd_addr = mem_rd_reg_q;
-			rvfi_rd_wdata = mem_rdata;
+			rvfi_rd_wdata = mem_rd_reg_q ? mem_rdata : 0;
 		end else begin
 			rvfi_rd_addr = rvfi_pre_rd_addr;
 			rvfi_rd_wdata = rvfi_pre_rd_wdata;
