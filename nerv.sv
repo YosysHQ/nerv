@@ -18,7 +18,8 @@
  */
 
 module nerv #(
-	parameter [31:0] RESET_ADDR = 32'h 0000_0000
+	parameter [31:0] RESET_ADDR = 32'h 0000_0000,
+	parameter integer NUMREGS = 32
 ) (
 	input clock,
 	input reset,
@@ -85,10 +86,10 @@ module nerv #(
 
 	assign dmem_valid = mem_wr_enable || mem_rd_enable;
 	assign dmem_addr = mem_wr_enable ? mem_wr_addr : mem_rd_enable ? mem_rd_addr : 32'h x;
-	assign dmem_wstrb = mem_wr_enable ? mem_wr_strb : 4'h 0;
+	assign dmem_wstrb = mem_wr_enable ? mem_wr_strb : mem_rd_enable ? 4'h 0 : 4'h x;
 	assign dmem_wdata = mem_wr_enable ? mem_wr_data : 32'h x;
 
-	reg [31:0] regfile [0:31];
+	reg [31:0] regfile [0:NUMREGS-1];
 	wire [31:0] insn;
 	reg [31:0] npc;
 	reg [31:0] pc;

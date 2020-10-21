@@ -120,13 +120,13 @@ nerv dut (
 	.stall(stall),
 
 	.imem_addr(imem_addr),
-	.imem_data(imem_data),
+	.imem_data(stall ? 32'bx : imem_data),
 
 	.dmem_valid(dmem_valid),
 	.dmem_addr(dmem_addr),
 	.dmem_wstrb(dmem_wstrb),
 	.dmem_wdata(dmem_wdata),
-	.dmem_rdata(dmem_rdata)
+	.dmem_rdata(stall ? 32'bx : dmem_rdata)
 );
 
 reg [31:0] cycles = 0;
