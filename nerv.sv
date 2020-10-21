@@ -172,6 +172,7 @@ module nerv #(
 	reg illinsn;
 
 	reg trapped;
+	reg trapped_q;
 	assign trap = trapped;
 
 	always @(posedge clock) begin
@@ -336,6 +337,7 @@ module nerv #(
 
 	always @(posedge clock) begin
 		reset_q <= reset;
+		trapped_q <= trapped;
 
 		if (!trapped && !stall && !reset && !reset_q) begin
 			if (illinsn)
@@ -405,7 +407,7 @@ module nerv #(
 			rvfi_rd_addr = rvfi_pre_rd_addr;
 			rvfi_rd_wdata = rvfi_pre_rd_wdata;
 		end
-		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q;
+		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q && !trapped_q;
 		rvfi_mem_rdata = dmem_rdata;
 	end
 `endif
