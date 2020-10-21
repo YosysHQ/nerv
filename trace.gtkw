@@ -27,6 +27,8 @@ rvfi_testbench.wrapper.uut.stall
 rvfi_testbench.wrapper.uut.trap
 @200
 -
+@23
+rvfi_testbench.wrapper.uut.pc[31:0]
 @22
 rvfi_testbench.wrapper.uut.insn[31:0]
 @c00200
@@ -52,6 +54,8 @@ rvfi_testbench.wrapper.uut.imm_s_sext[31:0]
 @200
 -
 -Checker
+@24
+rvfi_testbench.checker_inst.rvfi_order[63:0]
 @28
 rvfi_testbench.checker_inst.rvfi_valid
 @29

@@ -310,10 +310,20 @@ module nerv #(
 			default: illinsn = 1;
 		endcase
 
-		if (reset) begin
+		if (mem_rd_enable_q) begin
+			npc = pc;
+			next_wr = 0;
+			illinsn = 0;
+			mem_rd_enable = 0;
+			mem_wr_enable = 0;
+		end
+
+		if (reset || reset_q) begin
 			npc = RESET_ADDR;
 			next_wr = 0;
 			illinsn = 0;
+			mem_rd_enable = 0;
+			mem_wr_enable = 0;
 		end
 	end
 
@@ -342,46 +352,41 @@ module nerv #(
 		if (!trapped && !stall && !reset && !reset_q) begin
 			if (illinsn)
 				trapped <= 1;
-			if (!mem_rd_enable_q)
-				pc <= npc;
+			pc <= npc;
 `ifdef NERV_RVFI
-			if (mem_rd_enable_q) begin
-				rvfi_pre_valid <= 0;
+			rvfi_pre_valid <= !mem_rd_enable_q;
+			rvfi_order <= rvfi_order + 1;
+			rvfi_insn <= insn;
+			rvfi_trap <= illinsn;
+			rvfi_halt <= illinsn;
+			rvfi_intr <= 0;
+			rvfi_mode <= 3;
+			rvfi_ixl <= 1;
+			rvfi_rs1_addr <= insn_rs1;
+			rvfi_rs2_addr <= insn_rs2;
+			rvfi_rs1_rdata <= rs1_value;
+			rvfi_rs2_rdata <= rs2_value;
+			rvfi_pre_rd_addr <= next_wr ? insn_rd : 0;
+			rvfi_pre_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
+			rvfi_pc_rdata <= pc;
+			rvfi_pc_wdata <= npc;
+			if (dmem_valid) begin
+				rvfi_mem_addr <= dmem_addr;
+				case ({mem_rd_enable, insn_funct3})
+					4'b 1_000 /* LB  */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
+					4'b 1_001 /* LH  */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
+					4'b 1_010 /* LW  */: begin rvfi_mem_rmask <= 4'b 1111 << mem_rd_func[4:3]; end
+					4'b 1_100 /* LBU */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
+					4'b 1_101 /* LHU */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
+					default: rvfi_mem_rmask <= 0;
+				endcase
+				rvfi_mem_wmask <= dmem_wstrb;
+				rvfi_mem_wdata <= dmem_wdata;
 			end else begin
-				rvfi_pre_valid <= 1;
-				rvfi_order <= rvfi_order + 1;
-				rvfi_insn <= insn;
-				rvfi_trap <= illinsn;
-				rvfi_halt <= illinsn;
-				rvfi_intr <= 0;
-				rvfi_mode <= 3;
-				rvfi_ixl <= 1;
-				rvfi_rs1_addr <= insn_rs1;
-				rvfi_rs2_addr <= insn_rs2;
-				rvfi_rs1_rdata <= rs1_value;
-				rvfi_rs2_rdata <= rs2_value;
-				rvfi_pre_rd_addr <= next_wr ? insn_rd : 0;
-				rvfi_pre_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
-				rvfi_pc_rdata <= pc;
-				rvfi_pc_wdata <= npc;
-				if (dmem_valid) begin
-					rvfi_mem_addr <= dmem_addr;
-					case ({mem_rd_enable, insn_funct3})
-						4'b 1_000 /* LB  */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
-						4'b 1_001 /* LH  */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
-						4'b 1_010 /* LW  */: begin rvfi_mem_rmask <= 4'b 1111 << mem_rd_func[4:3]; end
-						4'b 1_100 /* LBU */: begin rvfi_mem_rmask <= 4'b 0001 << mem_rd_func[4:3]; end
-						4'b 1_101 /* LHU */: begin rvfi_mem_rmask <= 4'b 0011 << mem_rd_func[4:3]; end
-						default: rvfi_mem_rmask <= 0;
-					endcase
-					rvfi_mem_wmask <= dmem_wstrb;
-					rvfi_mem_wdata <= dmem_wdata;
-				end else begin
-					rvfi_mem_addr <= 0;
-					rvfi_mem_rmask <= 0;
-					rvfi_mem_wmask <= 0;
-					rvfi_mem_wdata <= 0;
-				end
+				rvfi_mem_addr <= 0;
+				rvfi_mem_rmask <= 0;
+				rvfi_mem_wmask <= 0;
+				rvfi_mem_wdata <= 0;
 			end
 `endif
 			if (mem_rd_enable_q || next_wr)
