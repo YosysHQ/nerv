@@ -25,6 +25,7 @@ localparam TIMEOUT = (1<<10);
 reg clock;
 reg reset = 1'b1;
 reg stall = 1'b0;
+wire trap;
 
 wire [31:0] imem_addr;
 reg  [31:0] imem_data;
@@ -118,6 +119,7 @@ nerv dut (
 	.clock(clock),
 	.reset(reset),
 	.stall(stall),
+	.trap(trap),
 
 	.imem_addr(imem_addr),
 	.imem_data(stall ? 32'bx : imem_data),
@@ -133,8 +135,8 @@ reg [31:0] cycles = 0;
 
 always @(posedge clock) begin
 	cycles <= cycles + 32'h1;
-	if (cycles >= TIMEOUT) begin
-		$display("Simulated %d cycles", cycles);
+	if (trap || (cycles >= TIMEOUT)) begin
+		$display("Simulated %0d cycles", cycles);
 		$finish;
 	end
 end
