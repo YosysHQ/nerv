@@ -41,6 +41,9 @@ design.bin: design.asc
 prog: design.bin
 	iceprog $<
 	
+show:
+	gtkwave testbench.vcd testbench.gtkw >> gtkwave.log 2>&1 &
+
 clean:
 	rm -rf firmware.elf firmware.hex testbench testbench.vcd gtkwave.log
 	rm -rf design.json design.asc design.bin design_ys.log design_pnr.log
