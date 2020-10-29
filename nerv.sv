@@ -50,9 +50,12 @@ module nerv #(
 	output reg [31:0] rvfi_mem_wdata,
 `endif
 
+    // we have 2 external memories
+    // one is instruction memory
 	output [31:0] imem_addr,
 	input  [31:0] imem_data,
 
+    // the other is data memory
 	output        dmem_valid,
 	output [31:0] dmem_addr,
 	output [ 3:0] dmem_wstrb,
@@ -73,6 +76,7 @@ module nerv #(
 	reg [4:0] mem_rd_reg_q;
 	reg [4:0] mem_rd_func_q;
 
+    // delayed copies of mem_rd
 	always @(posedge clock) begin
 		if (!stall) begin
 			mem_rd_enable_q <= mem_rd_enable;
@@ -84,11 +88,13 @@ module nerv #(
 		end
 	end
 
+    // memory signals
 	assign dmem_valid = mem_wr_enable || mem_rd_enable;
-	assign dmem_addr = mem_wr_enable ? mem_wr_addr : mem_rd_enable ? mem_rd_addr : 32'h x;
+	assign dmem_addr  = mem_wr_enable ? mem_wr_addr : mem_rd_enable ? mem_rd_addr : 32'h x;
 	assign dmem_wstrb = mem_wr_enable ? mem_wr_strb : mem_rd_enable ? 4'h 0 : 4'h x;
 	assign dmem_wdata = mem_wr_enable ? mem_wr_data : 32'h x;
 
+    // registers, instruction reg, program counter, next pc
 	reg [31:0] regfile [0:NUMREGS-1];
 	wire [31:0] insn;
 	reg [31:0] npc;
@@ -100,12 +106,15 @@ module nerv #(
 		imem_addr_q <= imem_addr;
 	end
 
+    // instruction memory pointer
 	assign imem_addr = (stall || trap || mem_rd_enable_q) ? imem_addr_q : npc;
 	assign insn = imem_data;
 
+    // rs1 and rs2 are source for the instruction
 	wire [31:0] rs1_value = !insn_rs1 ? 0 : regfile[insn_rs1];
 	wire [31:0] rs2_value = !insn_rs2 ? 0 : regfile[insn_rs2];
 
+    // components of the instruction
 	wire [6:0] insn_funct7;
 	wire [4:0] insn_rs2;
 	wire [4:0] insn_rs1;
@@ -113,8 +122,10 @@ module nerv #(
 	wire [4:0] insn_rd;
 	wire [6:0] insn_opcode;
 
+    // split R-type instruction - see section 2.2 of RiscV spec
 	assign {insn_funct7, insn_rs2, insn_rs1, insn_funct3, insn_rd, insn_opcode} = insn;
 
+    // setup for I, S, B & J type instructions
 	wire [11:0] imm_i;
 	assign imm_i = insn[31:20];
 
@@ -132,6 +143,7 @@ module nerv #(
 	wire [31:0] imm_b_sext = $signed(imm_b);
 	wire [31:0] imm_j_sext = $signed(imm_j);
 
+    // opcodes - see section 19 of RiscV spec
 	localparam OPCODE_LOAD       = 7'b 00_000_11;
 	localparam OPCODE_STORE      = 7'b 01_000_11;
 	localparam OPCODE_MADD       = 7'b 10_000_11;
@@ -167,6 +179,7 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
+    // next write, next destination (rd), illegal instruction registers
 	reg next_wr;
 	reg [31:0] next_rd;
 	reg illinsn;
@@ -175,11 +188,11 @@ module nerv #(
 	reg trapped_q;
 	assign trap = trapped;
 
-	always @(posedge clock) begin
-	end
-
 	always @* begin
+        // advance pc
 		npc = pc + 4;
+
+        // defaults for read, write
 		next_wr = 0;
 		next_rd = 0;
 		illinsn = 0;
@@ -194,15 +207,19 @@ module nerv #(
 		mem_rd_reg = 'hx;
 		mem_rd_func = 'hx;
 
+        // act on opcodes
 		case (insn_opcode)
+            // Load Upper Immediate
 			OPCODE_LUI: begin
 				next_wr = 1;
 				next_rd = insn[31:12] << 12;
 			end
+            // Add Upper Immediate to Program Counter
 			OPCODE_AUIPC: begin
 				next_wr = 1;
 				next_rd = (insn[31:12] << 12) + pc;
 			end
+            // Jump And Link (unconditional jump)
 			OPCODE_JAL: begin
 				next_wr = 1;
 				next_rd = npc;
@@ -212,6 +229,7 @@ module nerv #(
 					npc = npc & ~32'b 11;
 				end
 			end
+            // Jump And Link Register (indirect jump)
 			OPCODE_JALR: begin
 				case (insn_funct3)
 					3'b 000 /* JALR */: begin
@@ -226,6 +244,7 @@ module nerv #(
 					npc = npc & ~32'b 11;
 				end
 			end
+            // branch instructions: Branch If Equal, Branch Not Equal, Branch Less Than, Branch Greater Than, Branch Less Than Unsigned, Branch Greater Than Unsigned
 			OPCODE_BRANCH: begin
 				case (insn_funct3)
 					3'b 000 /* BEQ  */: begin if (rs1_value == rs2_value) npc = pc + imm_b_sext; end
@@ -241,6 +260,7 @@ module nerv #(
 					npc = npc & ~32'b 11;
 				end
 			end
+            // load from memory into rd: Load Byte, Load Halfword, Load Word, Load Byte Unsigned, Load Halfword Unsigned
 			OPCODE_LOAD: begin
 				mem_rd_addr = rs1_value + imm_i_sext;
 				casez ({insn_funct3, mem_rd_addr[1:0]})
@@ -257,6 +277,7 @@ module nerv #(
 					default: illinsn = 1;
 				endcase
 			end
+            // store to memory instructions: Store Byte, Store Halfword, Store Word
 			OPCODE_STORE: begin
 				mem_wr_addr = rs1_value + imm_s_sext;
 				casez ({insn_funct3, mem_wr_addr[1:0]})
@@ -278,6 +299,8 @@ module nerv #(
 					default: illinsn = 1;
 				endcase
 			end
+            // immediate ALU instructions: Add Immediate, Set Less Than Immediate, Set Less Than Immediate Unsigned, XOR Immediate,
+            // OR Immediate, And Immediate, Shift Left Logical Immediate, Shift Right Logical Immediate, Shift Right Arithmetic Immediate
 			OPCODE_OP_IMM: begin
 				casez ({insn_funct7, insn_funct3})
 					10'b zzzzzzz_000 /* ADDI  */: begin next_wr = 1; next_rd = rs1_value + imm_i_sext; end
@@ -293,6 +316,8 @@ module nerv #(
 				endcase
 			end
 			OPCODE_OP: begin
+                // ALU instructions: Add, Subtract, Shift Left Logical, Set Left Than, Set Less Than Unsigned, XOR, Shift Right Logical,
+                // Shift Right Arithmetic, OR, AND
 				case ({insn_funct7, insn_funct3})
 					10'b 0000000_000 /* ADD  */: begin next_wr = 1; next_rd = rs1_value + rs2_value; end
 					10'b 0100000_000 /* SUB  */: begin next_wr = 1; next_rd = rs1_value - rs2_value; end
@@ -310,6 +335,7 @@ module nerv #(
 			default: illinsn = 1;
 		endcase
 
+        // last cycle mem read enable ??
 		if (mem_rd_enable_q) begin
 			npc = pc;
 			next_wr = 0;
@@ -318,6 +344,7 @@ module nerv #(
 			mem_wr_enable = 0;
 		end
 
+        // reset
 		if (reset || reset_q) begin
 			npc = RESET_ADDR;
 			next_wr = 0;
@@ -335,6 +362,7 @@ module nerv #(
 	reg [31:0] rvfi_pre_rd_wdata;
 `endif
 
+    // mem read functions: Lower and Upper Bytes, signed and unsigned
 	always @* begin
 		mem_rdata = dmem_rdata >> (8*mem_rd_func_q[4:3]);
 		case (mem_rd_func_q[2:0])
@@ -345,10 +373,12 @@ module nerv #(
 		endcase
 	end
 
+    // every cycle
 	always @(posedge clock) begin
 		reset_q <= reset;
 		trapped_q <= trapped;
 
+        // increment pc if possible
 		if (!trapped && !stall && !reset && !reset_q) begin
 			if (illinsn)
 				trapped <= 1;
@@ -389,10 +419,12 @@ module nerv #(
 				rvfi_mem_wdata <= 0;
 			end
 `endif
+            // update registers from memory or rd (destination)
 			if (mem_rd_enable_q || next_wr)
 				regfile[mem_rd_enable_q ? mem_rd_reg_q : insn_rd] <= mem_rd_enable_q ? mem_rdata : next_rd;
 		end
 
+        // reset
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
 			trapped <= 0;
