@@ -335,7 +335,7 @@ module nerv #(
 			default: illinsn = 1;
 		endcase
 
-		// reset memory access signals
+		// if last cycle was a memory read, then this cycle is the 2nd part of it and imem_data will not be a valid instruction
 		if (mem_rd_enable_q) begin
 			npc = pc;
 			next_wr = 0;
