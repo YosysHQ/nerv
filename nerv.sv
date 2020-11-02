@@ -126,19 +126,19 @@ module nerv #(
 	assign {insn_funct7, insn_rs2, insn_rs1, insn_funct3, insn_rd, insn_opcode} = insn;
 
 	// setup for I, S, B & J type instructions
-    // I - short immediates and loads
+	// I - short immediates and loads
 	wire [11:0] imm_i;
 	assign imm_i = insn[31:20];
 
-    // S - stores
+	// S - stores
 	wire [11:0] imm_s;
 	assign imm_s[11:5] = insn_funct7, imm_s[4:0] = insn_rd;
 
-    // B - conditionals
+	// B - conditionals
 	wire [12:0] imm_b;
 	assign {imm_b[12], imm_b[10:5]} = insn_funct7, {imm_b[4:1], imm_b[11]} = insn_rd, imm_b[0] = 1'b0;
 
-    // J - unconditional jumps
+	// J - unconditional jumps
 	wire [20:0] imm_j;
 	assign {imm_j[20], imm_j[10:1], imm_j[11], imm_j[19:12], imm_j[0]} = {insn[31:12], 1'b0};
 
