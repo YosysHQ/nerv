@@ -39,7 +39,7 @@ end
 
 // Map 7 LEDs that exists on icebreaker board
 wire [31:0] leds;
-assign { LEDR_N, LEDG_N, LED1, LED2, LED3, LED4, LED5 } = leds[6:0];
+assign { LEDR_N, LEDG_N, LED1, LED2, LED3, LED4, LED5 } = {~leds[6:5], leds[4:0]};
 
 nervsoc soc (
 	.clock(CLK),
