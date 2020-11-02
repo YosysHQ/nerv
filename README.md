@@ -3,6 +3,7 @@ NERV - Naive Educational RISC-V Processor
 
 NERV is a very simple single-stage RV32I processor.
 
+![system diagram](nerv.png)
 
 Running the simulation testbench
 --------------------------------
