@@ -1,7 +1,8 @@
 NERV - Naive Educational RISC-V Processor
 =========================================
 
-NERV is a very simple single-stage RV32I processor.
+NERV is a very simple single-stage RV32I processor. 
+It is equipped with an [RVFI interface](https://github.com/SymbioticEDA/riscv-formal/blob/master/docs/rvfi.md) and is formally verified.
 
 ![system diagram](NERV.png)
 
@@ -30,8 +31,3 @@ iCEBreaker SOC example
 ----------------------
 
 See the [iCEBreaker SOC README](examples/icebreaker/README.md)
-
-```
-cd examples/icebreaker
-make prog
-```
