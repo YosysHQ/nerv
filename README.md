@@ -25,3 +25,13 @@ git clone https://github.com/SymbioticEDA/nerv.git
 cd nerv
 make -j8 check
 ```
+
+iCEBreaker SOC example
+----------------------
+
+See the [iCEBreaker SOC README](examples/icebreaker/README.md)
+
+```
+cd examples/icebreaker
+make prog
+```
