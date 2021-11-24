@@ -192,6 +192,55 @@ module nerv #(
 	reg trapped_q;
 	assign trap = trapped;
 
+	reg [ 1:0] csr_mode; // 00=None, 01=RW, 10=RS, 11=RC
+	wire       csr_ack = 0;
+	reg [11:0] csr_addr;
+	reg [31:0] csr_rsval;
+	reg [31:0] csr_rdval;
+
+`define NERV_CSR(name, addr, init) \
+localparam [11:0] csr_``name``_addr = 12'h addr; \
+localparam [31:0] csr_``name``_init = 31'h init; \
+wire csr_``name``_sel = csr_addr == csr_``name``_addr; \
+reg [31:0] csr_``name``_value; \
+reg [31:0] csr_``name``_next; \
+always @(posedge clock) begin \
+  csr_``name``_value <= csr_``name``_next; \
+  if (reset || reset_q) csr_``name``_value <= csr_``name``_init; \
+end \
+task csr_``name``_rw; begin \
+end endtask
+
+`NERV_CSR(mcycle,    B00, 0000_0000)
+`NERV_CSR(minstret,  B00, 0000_0000)
+
+`NERV_CSR(mcycleh,   B00, 0000_0000)
+`NERV_CSR(minstreth, B00, 0000_0000)
+
+`define NERV_CSR_RW(name) \
+csr_``name``_next = csr_``name``_value; \
+if (!trapped && !stall && csr_``name``_sel) begin \
+  case (csr_mode) \
+    2'b 01 /* RW */: csr_``name``_next = csr_rsval; \
+    2'b 10 /* RS */: csr_``name``_next = csr_``name``_next | csr_rsval; \
+    2'b 11 /* RC */: csr_``name``_next = csr_``name``_next & ~csr_rsval; \
+  endcase \
+end
+
+	always @* begin
+		`NERV_CSR_RW(mcycle);
+		`NERV_CSR_RW(minstret);
+
+		`NERV_CSR_RW(mcycleh);
+		`NERV_CSR_RW(minstreth);
+
+		{csr_mcycleh_next, csr_mcycle_next} = {csr_mcycleh_next, csr_mcycle_next} + 1;
+
+		if (!trapped && !stall) begin
+			{csr_minstreth_next, csr_minstret_next} = {csr_minstreth_next, csr_minstret_next} + 1;
+		end
+	end
+
 	always @* begin
 		// advance pc
 		npc = pc + 4;
@@ -210,6 +259,12 @@ module nerv #(
 		mem_rd_addr = 'hx;
 		mem_rd_reg = 'hx;
 		mem_rd_func = 'hx;
+
+		// defaults for CSR interface
+		csr_mode = 0;
+		csr_addr = 'hx;
+		csr_rsval = 'hx;
+		csr_rdval = 'hx;
 
 		// act on opcodes
 		case (insn_opcode)
@@ -335,6 +390,16 @@ module nerv #(
 					10'b 0000000_111 /* AND  */: begin next_wr = 1; next_rd = rs1_value & rs2_value; end
 					default: illinsn = 1;
 				endcase
+			end
+			OPCODE_SYSTEM: begin
+				csr_mode = insn_funct3[1:0];
+				if (csr_mode) begin
+					csr_addr = imm_i;
+					csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
+					next_rd = csr_rdval;
+					illinsn = !csr_ack;
+				end else
+					illinsn = 1;
 			end
 			default: illinsn = 1;
 		endcase
