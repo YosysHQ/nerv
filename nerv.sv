@@ -24,7 +24,10 @@
 	 *  CSR DECLARATIONS  *
 	 **********************/
 
-	// FIXME: Memory-Mapped Machine Timer (mtime ad timecmp)
+	// Note: The Memory-Mapped Machine Timers (mtime and timecmp) are not
+	// part of the processor core itself. It's up to the SoC to provide
+	// this part of the RISC-V M-Mode Spec.
+
 	// FIXME: Additional instructions: ECALL, EBREAK, MRET, WFI
 
 `define NERV_MACHINE_CSRS /* Machine Information CSRs */				\
@@ -391,19 +394,17 @@ module nerv #(
 	 *  CSR DEFINITIONS  *
 	 *********************/
 
-	reg [ 1:0] csr_mode; // 00=None, 01=RW, 10=RS, 11=RC
 	reg        csr_ack;
-	reg [11:0] csr_addr;
-	reg [31:0] csr_rsval;
 	reg [31:0] csr_rdval;
 	reg [31:0] csr_next;
 
-	wire csr_en = running && csr_mode;
-	wire csr_ro = csr_en && (csr_mode != 2'b01 && !csr_rsval);
+	wire [ 1:0] csr_mode = (running && insn_opcode == OPCODE_SYSTEM) ? insn_funct3[1:0] : 2'b 00; // 00=None, 01=RW, 10=RS, 11=RC
+	wire [11:0] csr_addr = imm_i;
+	wire [31:0] csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
+	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !csr_rsval);
 
 `define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)				\
-	localparam [11:0] csr_``_NAME``_addr = _ADDR;			\
-	wire csr_``_NAME``_sel = csr_addr == csr_``_NAME``_addr;	\
+	wire csr_``_NAME``_sel = csr_mode && csr_addr == _ADDR;		\
 	reg [31:0] csr_``_NAME``_value;					\
 	reg [31:0] csr_``_NAME``_next;					\
 	always @(posedge clock) begin					\
@@ -413,80 +414,20 @@ module nerv #(
 	end
 
 `define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)				\
-	localparam [11:0] csr_``_NAME``_addr = _ADDR;			\
-	wire csr_``_NAME``_sel = csr_addr == csr_``_NAME``_addr;	\
+	wire csr_``_NAME``_sel = csr_mode && csr_addr == _ADDR;		\
 	localparam [31:0] csr_``_NAME``_value = _VALUE;
 
 `define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)				\
-	localparam [11:0] csr_``_NAME``_addr = _ADDR;			\
-	wire csr_``_NAME``_sel = csr_addr == csr_``_NAME``_addr;	\
+	wire csr_``_NAME``_sel = csr_ro && csr_addr == _ADDR;		\
 	localparam [31:0] csr_``_NAME``_value = _VALUE;
 
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
 `undef NERV_CSR_VAL_MRW
 `undef NERV_CSR_VAL_MRO
+
+`endif // NERV_CSR
  
-	always @* begin
-		csr_ack = 0;
-		csr_rdval = 'hx;
-
-		(* parallel_case *)
-		case (1'b1)
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)		\
-	csr_en && csr_``_NAME``_sel: begin		\
-		csr_ack = 1;				\
-		csr_rdval = csr_``_NAME``_value;	\
-	end
-
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)		\
-	csr_en && csr_``_NAME``_sel: begin		\
-		csr_ack = 1;				\
-		csr_rdval = csr_``_NAME``_value;	\
-	end
-
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)		\
-	csr_ro && csr_``_NAME``_sel: begin		\
-		csr_ack = 1;				\
-		csr_rdval = csr_``_NAME``_value;	\
-	end
-
-`NERV_CSRS
-`undef NERV_CSR_REG_MRW
-`undef NERV_CSR_VAL_MRW
-`undef NERV_CSR_VAL_MRO
-		endcase
-
-		csr_next <= csr_rdval;
-		case (csr_mode)
-			2'b 01 /* RW */: csr_next = csr_rsval;
-			2'b 10 /* RS */: csr_next = csr_next | csr_rsval;
-			2'b 11 /* RC */: csr_next = csr_next & ~csr_rsval;
-		endcase
-
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE) \
-	csr_``_NAME``_next = csr_``_NAME``_sel ? csr_next : csr_``_NAME``_value;
-
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)
-
-`NERV_CSRS
-`undef NERV_CSR_REG_MRW
-`undef NERV_CSR_VAL_MRW
-`undef NERV_CSR_VAL_MRO
-
-		{csr_mcycleh_next, csr_mcycle_next} = {csr_mcycleh_next, csr_mcycle_next} + 1;
-
-		if (running) begin
-			{csr_minstreth_next, csr_minstret_next} = {csr_minstreth_next, csr_minstret_next} + 1;
-		end
-	end
-
-	/************************
-	 *  END OF CSR SECTION  *
-	 ************************/
-`endif
-
 	always @* begin
 		// advance pc
 		npc = pc + 4;
@@ -507,12 +448,59 @@ module nerv #(
 		mem_rd_func = 'hx;
 
 `ifdef NERV_CSR
-		// defaults for CSR interface
-		csr_mode = 0;
-		csr_addr = 'hx;
-		csr_rsval = 'hx;
+		csr_ack = 0;
 		csr_rdval = 'hx;
-`endif
+
+		(* parallel_case *)
+		case (1'b1)
+`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)		\
+			csr_mode && csr_``_NAME``_sel: begin		\
+				csr_ack = 1;				\
+				csr_rdval = csr_``_NAME``_value;	\
+			end
+
+`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)		\
+			csr_mode && csr_``_NAME``_sel: begin		\
+				csr_ack = 1;				\
+				csr_rdval = csr_``_NAME``_value;	\
+			end
+
+`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)		\
+			csr_ro && csr_``_NAME``_sel: begin		\
+				csr_ack = 1;				\
+				csr_rdval = csr_``_NAME``_value;	\
+			end
+
+`NERV_CSRS
+`undef NERV_CSR_REG_MRW
+`undef NERV_CSR_VAL_MRW
+`undef NERV_CSR_VAL_MRO
+		endcase
+
+		csr_next = csr_rdval;
+		case (csr_mode)
+			2'b 01 /* RW */: csr_next = csr_rsval;
+			2'b 10 /* RS */: csr_next = csr_next | csr_rsval;
+			2'b 11 /* RC */: csr_next = csr_next & ~csr_rsval;
+		endcase
+
+`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE) \
+		csr_``_NAME``_next = csr_``_NAME``_sel ? csr_next : csr_``_NAME``_value;
+
+`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)
+`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)
+
+`NERV_CSRS
+`undef NERV_CSR_REG_MRW
+`undef NERV_CSR_VAL_MRW
+`undef NERV_CSR_VAL_MRO
+
+		{csr_mcycleh_next, csr_mcycle_next} = {csr_mcycleh_next, csr_mcycle_next} + 1;
+
+		if (running) begin
+			{csr_minstreth_next, csr_minstret_next} = {csr_minstreth_next, csr_minstret_next} + 1;
+		end
+`endif // NERV_CSR
 
 		// act on opcodes
 		case (insn_opcode)
@@ -641,12 +629,8 @@ module nerv #(
 			end
 `ifdef NERV_CSR
 			OPCODE_SYSTEM: begin
-				csr_mode = insn_funct3[1:0];
-				if (csr_mode) begin
-					csr_addr = imm_i;
-					csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
+				if (csr_ack) begin
 					next_rd = csr_rdval;
-					illinsn = !csr_ack;
 				end else
 					illinsn = 1;
 			end
