@@ -305,10 +305,6 @@ module nerv #(
 	assign imem_addr = (stall || trap || mem_rd_enable_q) ? imem_addr_q : npc;
 	assign insn = imem_data;
 
-	// rs1 and rs2 are source for the instruction
-	wire [31:0] rs1_value = !insn_rs1 ? 0 : regfile[insn_rs1];
-	wire [31:0] rs2_value = !insn_rs2 ? 0 : regfile[insn_rs2];
-
 	// components of the instruction
 	wire [6:0] insn_funct7;
 	wire [4:0] insn_rs2;
@@ -316,6 +312,10 @@ module nerv #(
 	wire [2:0] insn_funct3;
 	wire [4:0] insn_rd;
 	wire [6:0] insn_opcode;
+
+	// rs1 and rs2 are source for the instruction
+	wire [31:0] rs1_value = !insn_rs1 ? 0 : regfile[insn_rs1];
+	wire [31:0] rs2_value = !insn_rs2 ? 0 : regfile[insn_rs2];
 
 	// split R-type instruction - see section 2.2 of RiscV spec
 	assign {insn_funct7, insn_rs2, insn_rs1, insn_funct3, insn_rd, insn_opcode} = insn;
@@ -387,6 +387,7 @@ module nerv #(
 	reg trapped_q;
 	assign trap = trapped;
 
+	reg reset_q;
 	wire running = !trapped && !stall && !reset && !reset_q;
 
 `ifdef NERV_CSR
@@ -438,14 +439,14 @@ module nerv #(
 		illinsn = 0;
 
 		mem_wr_enable = 0;
-		mem_wr_addr = 'hx;
-		mem_wr_data = 'hx;
-		mem_wr_strb = 'hx;
+		mem_wr_addr = 32'hx;
+		mem_wr_data = 32'hx;
+		mem_wr_strb = 4'hx;
 
 		mem_rd_enable = 0;
-		mem_rd_addr = 'hx;
-		mem_rd_reg = 'hx;
-		mem_rd_func = 'hx;
+		mem_rd_addr = 32'hx;
+		mem_rd_reg = 5'hx;
+		mem_rd_func = 5'hx;
 
 `ifdef NERV_CSR
 		csr_ack = 0;
@@ -657,7 +658,6 @@ module nerv #(
 		end
 	end
 
-	reg reset_q;
 	reg [31:0] mem_rdata;
 `ifdef NERV_RVFI
 	reg rvfi_pre_valid;
