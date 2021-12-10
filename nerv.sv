@@ -37,20 +37,20 @@
 	`NERV_CSR_VAL_MRO(mhartid,           12'h F14, 31'h 0000_0000)
 
 `define NERV_TRAP_SETUP_CSRS /* Machine Trap Setup CSRs */				\
-	`NERV_CSR_REG_MRW(mstatus,           12'h 300, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_VAL_MRW(misa,              12'h 301, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(medeleg,           12'h 302, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mideleg,           12'h 303, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mie,               12'h 304, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mtvec,             12'h 305, 31'h 0000_0000)   // FIXME	\
-//	`NERV_CSR_REG_MRW(mcounteren,        12'h 306, 31'h 0000_0000)
+	`NERV_CSR_REG_MRW(mstatus,           12'h 300, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_VAL_MRW(misa,              12'h 301, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(medeleg,           12'h 302, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mideleg,           12'h 303, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mie,               12'h 304, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mtvec,             12'h 305, 31'h 0000_0000)   /* FIXME */	\
+/*	`NERV_CSR_REG_MRW(mcounteren,        12'h 306, 31'h 0000_0000) */
 
 `define NERV_TRAP_HANDLING_CSRS /* Machine Trap Handling CSRs */			\
-	`NERV_CSR_REG_MRW(mscratch,          12'h 340, 31'h 0000_0000)			\
-	`NERV_CSR_REG_MRW(mepc,              12'h 341, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mcause,            12'h 342, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mtval,             12'h 343, 31'h 0000_0000)   // FIXME	\
-	`NERV_CSR_REG_MRW(mip,               12'h 344, 31'h 0000_0000)   // FIXME
+	`NERV_CSR_REG_MRW(mscratch,          12'h 340, 31'h 0000_0000)	 		\
+	`NERV_CSR_REG_MRW(mepc,              12'h 341, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mcause,            12'h 342, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mtval,             12'h 343, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mip,               12'h 344, 31'h 0000_0000)   /* FIXME */
 
 `ifdef NERV_PMP
 `define NERV_PMP_CFG_CSRS /* Machine Memory Protection Config CSRs */			\
@@ -149,7 +149,7 @@
 	`NERV_CSR_VAL_MRW(mhpmcounter31h,    12'h B1F, 31'h 0000_0000)
 
 `define NERV_COUNTER_SETUP_CSRS /* Machine Counter Setup CSRs */			\
-//	`NERV_CSR_VAL_MRW(mcountinhibit,     12'h 320, 31'h 0000_0000)			\
+/*	`NERV_CSR_VAL_MRW(mcountinhibit,     12'h 320, 31'h 0000_0000) */		\
 	`NERV_CSR_VAL_MRW(mhpmevent3,        12'h 323, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmevent4,        12'h 324, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmevent5,        12'h 325, 31'h 0000_0000)			\
@@ -428,7 +428,7 @@ module nerv #(
 `undef NERV_CSR_VAL_MRO
 
 `endif // NERV_CSR
- 
+
 	always @* begin
 		// advance pc
 		npc = pc + 4;
