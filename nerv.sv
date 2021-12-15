@@ -632,6 +632,7 @@ module nerv #(
 `ifdef NERV_CSR
 			OPCODE_SYSTEM: begin
 				if (csr_ack) begin
+					next_wr = 1;
 					next_rd = csr_rdval;
 				end else
 					illinsn = 1;
