@@ -188,8 +188,6 @@
 	`NERV_PMP_ADDR_CSRS		\
 	`NERV_COUNTER_CSRS		\
 	`NERV_COUNTER_SETUP_CSRS
-`else
-`define NERV_CSRS
 `endif
 
 module nerv #(
@@ -220,17 +218,17 @@ module nerv #(
 	output reg [31:0] rvfi_pc_wdata,
 
 `ifdef NERV_CSR
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)			\
-	output reg [31:0] rvfi_csr_``_NAME``_rmask,		\
-	output reg [31:0] rvfi_csr_``_NAME``_wmask,		\
-	output reg [31:0] rvfi_csr_``_NAME``_rdata,		\
-	output reg [31:0] rvfi_csr_``_NAME``_wdata,
+`define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)			\
+	output reg [31:0] rvfi_csr_``NAME``_rmask,		\
+	output reg [31:0] rvfi_csr_``NAME``_wmask,		\
+	output reg [31:0] rvfi_csr_``NAME``_rdata,		\
+	output reg [31:0] rvfi_csr_``NAME``_wdata,
 
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)			\
-	`NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)
+`define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)			\
+	`NERV_CSR_REG_MRW(NAME, ADDR, VALUE)
 
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)			\
-	`NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)
+`define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE)			\
+	`NERV_CSR_REG_MRW(NAME, ADDR, VALUE)
 
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
@@ -404,23 +402,24 @@ module nerv #(
 	wire [31:0] csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
 	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !csr_rsval);
 
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)				\
-	wire csr_``_NAME``_sel = csr_mode && csr_addr == _ADDR;		\
-	reg [31:0] csr_``_NAME``_value;					\
-	reg [31:0] csr_``_NAME``_next;					\
+`define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)				\
+	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR;		\
+	reg [31:0] csr_``NAME``_value;					\
+	reg [31:0] csr_``NAME``_wdata;					\
+	reg [31:0] csr_``NAME``_next;					\
 	always @(posedge clock) begin					\
-		csr_``_NAME``_value <= csr_``_NAME``_next;		\
+		csr_``NAME``_value <= csr_``NAME``_next;		\
 		if (reset || reset_q)					\
-			csr_``_NAME``_value <= _VALUE;			\
+			csr_``NAME``_value <= VALUE;			\
 	end
 
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)				\
-	wire csr_``_NAME``_sel = csr_mode && csr_addr == _ADDR;		\
-	localparam [31:0] csr_``_NAME``_value = _VALUE;
+`define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)				\
+	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR;		\
+	localparam [31:0] csr_``NAME``_value = VALUE;
 
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)				\
-	wire csr_``_NAME``_sel = csr_ro && csr_addr == _ADDR;		\
-	localparam [31:0] csr_``_NAME``_value = _VALUE;
+`define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE)				\
+	wire csr_``NAME``_sel = csr_ro && csr_addr == ADDR;		\
+	localparam [31:0] csr_``NAME``_value = VALUE;
 
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
@@ -452,30 +451,31 @@ module nerv #(
 		csr_ack = 0;
 		csr_rdval = 'hx;
 
-		(* parallel_case *)
-		case (1'b1)
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE)		\
-			csr_mode && csr_``_NAME``_sel: begin		\
+		unique case (1'b1)
+`define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)		\
+			csr_mode && csr_``NAME``_sel: begin		\
 				csr_ack = 1;				\
-				csr_rdval = csr_``_NAME``_value;	\
+				csr_rdval = csr_``NAME``_value;	\
 			end
 
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)		\
-			csr_mode && csr_``_NAME``_sel: begin		\
+`define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)		\
+			csr_mode && csr_``NAME``_sel: begin		\
 				csr_ack = 1;				\
-				csr_rdval = csr_``_NAME``_value;	\
+				csr_rdval = csr_``NAME``_value;	\
 			end
 
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)		\
-			csr_ro && csr_``_NAME``_sel: begin		\
+`define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE)		\
+			csr_ro && csr_``NAME``_sel: begin		\
 				csr_ack = 1;				\
-				csr_rdval = csr_``_NAME``_value;	\
+				csr_rdval = csr_``NAME``_value;	\
 			end
 
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
 `undef NERV_CSR_VAL_MRW
 `undef NERV_CSR_VAL_MRO
+
+			default: /* nothing */;
 		endcase
 
 		csr_next = csr_rdval;
@@ -485,11 +485,12 @@ module nerv #(
 			2'b 11 /* RC */: csr_next = csr_next & ~csr_rsval;
 		endcase
 
-`define NERV_CSR_REG_MRW(_NAME, _ADDR, _VALUE) \
-		csr_``_NAME``_next = csr_``_NAME``_sel ? csr_next : csr_``_NAME``_value;
+`define NERV_CSR_REG_MRW(NAME, ADDR, VALUE) \
+		csr_``NAME``_wdata = csr_``NAME``_sel ? csr_next : csr_``NAME``_value; \
+		csr_``NAME``_next = csr_``NAME``_wdata;
 
-`define NERV_CSR_VAL_MRW(_NAME, _ADDR, _VALUE)
-`define NERV_CSR_VAL_MRO(_NAME, _ADDR, _VALUE)
+`define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)
+`define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE)
 
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
@@ -721,6 +722,27 @@ module nerv #(
 				rvfi_mem_wmask <= 0;
 				rvfi_mem_wdata <= 0;
 			end
+`ifdef NERV_CSR
+`define NERV_CSR_REG_MRW(NAME, ADDR, VALUE) \
+			rvfi_csr_``NAME``_rmask <= 32'h ffff_ffff;	\
+			rvfi_csr_``NAME``_wmask <= 32'h ffff_ffff;	\
+			rvfi_csr_``NAME``_rdata <= csr_``NAME``_value;	\
+			rvfi_csr_``NAME``_wdata <= csr_``NAME``_wdata;
+
+`define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE) \
+			rvfi_csr_``NAME``_rmask <= 32'h ffff_ffff;	\
+			rvfi_csr_``NAME``_wmask <= 32'h ffff_ffff;	\
+			rvfi_csr_``NAME``_rdata <= csr_``NAME``_value;	\
+			rvfi_csr_``NAME``_wdata <= csr_``NAME``_value;
+
+`define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE) \
+	`NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)
+
+`NERV_CSRS
+`undef NERV_CSR_REG_MRW
+`undef NERV_CSR_VAL_MRW
+`undef NERV_CSR_VAL_MRO
+`endif
 `endif
 			// update registers from memory or rd (destination)
 			if (mem_rd_enable_q || next_wr)
