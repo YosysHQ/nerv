@@ -451,7 +451,7 @@ module nerv #(
 		csr_ack = 0;
 		csr_rdval = 'hx;
 
-		unique case (1'b1)
+		case (1'b1)
 `define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)		\
 			csr_mode && csr_``NAME``_sel: begin		\
 				csr_ack = 1;				\

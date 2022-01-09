@@ -19,8 +19,8 @@
 
 module testbench;
 
-localparam MEM_ADDR_WIDTH = 16;
-localparam TIMEOUT = (1<<10);
+localparam MEM_ADDR_WIDTH = 17;
+localparam TIMEOUT = (1<<100);
 
 reg clock;
 reg reset = 1'b1;
@@ -42,7 +42,8 @@ always @(posedge clock) reset <= 0;
 reg [7:0] mem [0:(1<<MEM_ADDR_WIDTH)-1];
 
 wire wr_in_mem_range = (dmem_addr[31:2] < (1<<MEM_ADDR_WIDTH));
-wire wr_in_output = (dmem_addr == 32'h 02000000);
+wire wr_in_output = (dmem_addr == 32'h 0080_0000);
+wire wr_in_pass = (dmem_addr == 32'h 0080_00C4);
 
 reg [31:0] out;
 reg out_valid;
@@ -65,7 +66,7 @@ always @(posedge clock) begin
 	if (imem_addr >= (1<<MEM_ADDR_WIDTH)) begin
 		$display("Memory access out of range: imem_addr = 0x%08x", imem_addr);
 	end
-	if (dmem_valid && !(wr_in_mem_range || wr_in_output)) begin
+	if (dmem_valid && !(wr_in_mem_range || wr_in_output || wr_in_pass)) begin
 		$display("Memory access out of range: dmem_addr = 0x%08x", dmem_addr);
 	end
 end
@@ -98,6 +99,10 @@ always @(posedge clock) begin
 						out[(i*8)+: 8] <= dmem_wdata[(i*8)+: 8];
 						out_valid <= 1'b1;
 					end
+					if (wr_in_pass) begin
+						$display("ALL TESTS PASSED.");
+						$finish;
+					end
 					dmem_rdata <= 'hx;
 				end
 			end
@@ -115,7 +120,9 @@ initial begin
 	end
 end
 
-nerv dut (
+nerv #(
+	  .RESET_ADDR(32'h 0000_0080)
+	) dut (
 	.clock(clock),
 	.reset(reset),
 	.stall(stall),
