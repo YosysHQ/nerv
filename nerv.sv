@@ -118,35 +118,35 @@
 	`NERV_CSR_REG_MRW(mcycleh,           12'h B80, 31'h 0000_0000)			\
 	`NERV_CSR_REG_MRW(minstreth,         12'h B82, 31'h 0000_0000)			\
 	                        							\
-	`NERV_CSR_VAL_MRW(mhpmcounter3h,     12'h B03, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter4h,     12'h B04, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter5h,     12'h B05, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter6h,     12'h B06, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter7h,     12'h B07, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter8h,     12'h B08, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter9h,     12'h B09, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter10h,    12'h B0A, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter11h,    12'h B0B, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter12h,    12'h B0C, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter13h,    12'h B0D, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter14h,    12'h B0E, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter15h,    12'h B0F, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter16h,    12'h B10, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter17h,    12'h B11, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter18h,    12'h B12, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter19h,    12'h B13, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter20h,    12'h B14, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter21h,    12'h B15, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter22h,    12'h B16, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter23h,    12'h B17, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter24h,    12'h B18, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter25h,    12'h B19, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter26h,    12'h B1A, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter27h,    12'h B1B, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter28h,    12'h B1C, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter29h,    12'h B1D, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter30h,    12'h B1E, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(mhpmcounter31h,    12'h B1F, 31'h 0000_0000)
+	`NERV_CSR_VAL_MRW(mhpmcounter3h,     12'h B83, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter4h,     12'h B84, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter5h,     12'h B85, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter6h,     12'h B86, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter7h,     12'h B87, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter8h,     12'h B88, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter9h,     12'h B89, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter10h,    12'h B8A, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter11h,    12'h B8B, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter12h,    12'h B8C, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter13h,    12'h B8D, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter14h,    12'h B8E, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter15h,    12'h B8F, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter16h,    12'h B90, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter17h,    12'h B91, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter18h,    12'h B92, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter19h,    12'h B93, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter20h,    12'h B94, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter21h,    12'h B95, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter22h,    12'h B96, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter23h,    12'h B97, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter24h,    12'h B98, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter25h,    12'h B99, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter26h,    12'h B9A, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter27h,    12'h B9B, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter28h,    12'h B9C, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter29h,    12'h B9D, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter30h,    12'h B9E, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(mhpmcounter31h,    12'h B9F, 31'h 0000_0000)
 
 `define NERV_COUNTER_SETUP_CSRS /* Machine Counter Setup CSRs */			\
 /*	`NERV_CSR_VAL_MRW(mcountinhibit,     12'h 320, 31'h 0000_0000) */		\
