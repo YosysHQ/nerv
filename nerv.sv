@@ -39,7 +39,7 @@
 
 `define NERV_TRAP_SETUP_CSRS /* Machine Trap Setup CSRs */				\
 	`NERV_CSR_REG_MRW(mstatus,           12'h 300, 32'h 0000_0000)   /* FIXME */	\
-	`NERV_CSR_VAL_MRW(misa,              12'h 301, 32'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_VAL_MRW(misa,              12'h 301, 32'h 4000_0100)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(medeleg,           12'h 302, 32'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mideleg,           12'h 303, 32'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mie,               12'h 304, 32'h 0000_0000)   /* FIXME */	\
