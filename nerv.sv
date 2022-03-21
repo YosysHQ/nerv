@@ -34,7 +34,8 @@
 	`NERV_CSR_VAL_MRO(mvendorid,         12'h F11, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRO(marchid,           12'h F12, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRO(mimpid,            12'h F13, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRO(mhartid,           12'h F14, 31'h 0000_0000)
+	`NERV_CSR_VAL_MRO(mhartid,           12'h F14, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRO(mconfigptr,        12'h F15, 31'h 0000_0000)
 
 `define NERV_TRAP_SETUP_CSRS /* Machine Trap Setup CSRs */				\
 	`NERV_CSR_REG_MRW(mstatus,           12'h 300, 31'h 0000_0000)   /* FIXME */	\
@@ -44,20 +45,35 @@
 	`NERV_CSR_REG_MRW(mie,               12'h 304, 31'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mtvec,             12'h 305, 31'h 0000_0000)   /* FIXME */	\
 /*	`NERV_CSR_REG_MRW(mcounteren,        12'h 306, 31'h 0000_0000) */
+/*	`NERV_CSR_REG_MRW(mstatush,          12'h 310, 31'h 0000_0000) */
 
 `define NERV_TRAP_HANDLING_CSRS /* Machine Trap Handling CSRs */			\
 	`NERV_CSR_REG_MRW(mscratch,          12'h 340, 31'h 0000_0000)	 		\
 	`NERV_CSR_REG_MRW(mepc,              12'h 341, 31'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mcause,            12'h 342, 31'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mtval,             12'h 343, 31'h 0000_0000)   /* FIXME */	\
-	`NERV_CSR_REG_MRW(mip,               12'h 344, 31'h 0000_0000)   /* FIXME */
+	`NERV_CSR_REG_MRW(mip,               12'h 344, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mtinst,            12'h 34A, 31'h 0000_0000)   /* FIXME */	\
+	`NERV_CSR_REG_MRW(mtval2,            12'h 34B, 31'h 0000_0000)   /* FIXME */
 
 `ifdef NERV_PMP
 `define NERV_PMP_CFG_CSRS /* Machine Memory Protection Config CSRs */			\
 	`NERV_CSR_VAL_MRW(pmpcfg0,           12'h 3A0, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpcfg1,           12'h 3A1, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpcfg2,           12'h 3A2, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(pmpcfg3,           12'h 3A3, 31'h 0000_0000)
+	`NERV_CSR_VAL_MRW(pmpcfg3,           12'h 3A3, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg4,           12'h 3A4, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg5,           12'h 3A5, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg6,           12'h 3A6, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg7,           12'h 3A7, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg8,           12'h 3A8, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg9,           12'h 3A9, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg10,          12'h 3AA, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg11,          12'h 3AB, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg12,          12'h 3AC, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg13,          12'h 3AD, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg14,          12'h 3AE, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpcfg15,          12'h 3AF, 31'h 0000_0000)
 
 `define NERV_PMP_ADDR_CSRS /* Machine Memory Protection Addr CSRs */			\
 	`NERV_CSR_VAL_MRW(pmpaddr0,          12'h 3B0, 31'h 0000_0000)			\
@@ -75,7 +91,55 @@
 	`NERV_CSR_VAL_MRW(pmpaddr12,         12'h 3BC, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpaddr13,         12'h 3BD, 31'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpaddr14,         12'h 3BE, 31'h 0000_0000)			\
-	`NERV_CSR_VAL_MRW(pmpaddr15,         12'h 3BF, 31'h 0000_0000)
+	`NERV_CSR_VAL_MRW(pmpaddr15,         12'h 3BF, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr16,         12'h 3C0, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr17,         12'h 3C1, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr18,         12'h 3C2, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr19,         12'h 3C3, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr20,         12'h 3C4, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr21,         12'h 3C5, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr22,         12'h 3C6, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr23,         12'h 3C7, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr24,         12'h 3C8, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr25,         12'h 3C9, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr26,         12'h 3CA, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr27,         12'h 3CB, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr28,         12'h 3CC, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr29,         12'h 3CD, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr30,         12'h 3CE, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr31,         12'h 3CF, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr32,         12'h 3D0, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr33,         12'h 3D1, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr34,         12'h 3D2, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr35,         12'h 3D3, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr36,         12'h 3D4, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr37,         12'h 3D5, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr38,         12'h 3D6, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr39,         12'h 3D7, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr40,         12'h 3D8, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr41,         12'h 3D9, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr42,         12'h 3DA, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr43,         12'h 3DB, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr44,         12'h 3DC, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr45,         12'h 3DD, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr46,         12'h 3DE, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr47,         12'h 3DF, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr48,         12'h 3E0, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr49,         12'h 3E1, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr50,         12'h 3E2, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr51,         12'h 3E3, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr52,         12'h 3E4, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr53,         12'h 3E5, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr54,         12'h 3E6, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr55,         12'h 3E7, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr56,         12'h 3E8, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr57,         12'h 3E9, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr58,         12'h 3EA, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr59,         12'h 3EB, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr60,         12'h 3EC, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr61,         12'h 3ED, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr62,         12'h 3EE, 31'h 0000_0000)			\
+	`NERV_CSR_VAL_MRW(pmpaddr63,         12'h 3EF, 31'h 0000_0000)			\
 `else
 `define NERV_PMP_CFG_CSRS
 `define NERV_PMP_ADDR_CSRS
