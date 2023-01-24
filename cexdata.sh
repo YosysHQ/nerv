@@ -32,6 +32,8 @@ for x in {checks,testbug[0-9][0-9][0-9]}/*/FAIL; do
 	fi
 done
 
+sed -re '/WARNING|[Ww]arning/ ! d; /\[VERI-1927\] .*\/wrapper.sv:/ d; s/^([^:]|:[^ ])*: //;' checks/*/logfile.txt | sort -Vu > cexdata/warnings.txt
+
 for x in {checks,testbug[0-9][0-9][0-9]}/*.sby; do
 	test -f $x || continue
 	x=${x%.sby}
@@ -43,3 +45,4 @@ for x in {checks,testbug[0-9][0-9][0-9]}/*.sby; do
 		printf "%-30s %s\n" $x unknown
 	fi
 done | awk '{ print gensub(":", "", "g", $3), $0; }' | sort -n | cut -f2- -d' ' > cexdata/status.txt
+

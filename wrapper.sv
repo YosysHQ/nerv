@@ -26,6 +26,8 @@ module rvfi_wrapper (
 	(* keep *) `rvformal_rand_reg [31:0] imem_data;
 	(* keep *) `rvformal_rand_reg [31:0] dmem_rdata;
 
+	(* keep *) wire trap;
+
 	(* keep *) wire [31:0] imem_addr;
 
 	(* keep *) wire        dmem_valid;
@@ -37,6 +39,7 @@ module rvfi_wrapper (
 		.clock      (clock    ),
 		.reset      (reset    ),
 		.stall      (stall    ),
+		.trap       (trap     ),
 
 		.imem_addr  (imem_addr ),
 		.imem_data  (imem_data ),
@@ -47,7 +50,7 @@ module rvfi_wrapper (
 		.dmem_wdata (dmem_wdata),
 		.dmem_rdata (dmem_rdata),
 
-		`RVFI_CONN
+		`RVFI_CONN32
 	);
 
 `ifdef NERV_FAIRNESS

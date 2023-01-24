@@ -29,10 +29,13 @@ firmware.hex: firmware.elf
 testbench: testbench.sv nerv.sv
 	iverilog -o testbench -D STALL -D NERV_DBGREGS testbench.sv nerv.sv
 
-check:
+checks:
 	python3 ../../checks/genchecks.py
 	$(MAKE) -C checks
+
+check: checks
 	bash cexdata.sh
+	cat cexdata/warnings.txt
 	cat cexdata/status.txt
 
 show:
