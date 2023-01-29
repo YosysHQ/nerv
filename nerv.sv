@@ -31,6 +31,7 @@
 	// FIXME: Additional instructions: ECALL, EBREAK, MRET, WFI
 
 `define NERV_MACHINE_CSRS /* Machine Information CSRs */				\
+	/* all of these CSRs are mandatory but can legally be all 0 */			\
 	`NERV_CSR_VAL_MRO(mvendorid,         12'h F11, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRO(marchid,           12'h F12, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRO(mimpid,            12'h F13, 32'h 0000_0000)			\
@@ -39,13 +40,23 @@
 
 `define NERV_TRAP_SETUP_CSRS /* Machine Trap Setup CSRs */				\
 	`NERV_CSR_REG_MRW(mstatus,           12'h 300, 32'h 0000_0000)   /* FIXME */	\
-	`NERV_CSR_VAL_MRW(misa,              12'h 301, 32'h 4000_0100)   /* FIXME */	\
-	`NERV_CSR_REG_MRW(medeleg,           12'h 302, 32'h 0000_0000)   /* FIXME */	\
-	`NERV_CSR_REG_MRW(mideleg,           12'h 303, 32'h 0000_0000)   /* FIXME */	\
+	                        							\
+	/* misa can legally return all zeros */						\
+	`NERV_CSR_VAL_MRW(misa,              12'h 301, 32'h 0000_0000)			\
+	                        							\
+	/* medeleg and mideleg should only exist if S mode is available */		\
+/*	`NERV_CSR_REG_MRW(medeleg,           12'h 302, 32'h 0000_0000) */  		\
+/*	`NERV_CSR_REG_MRW(mideleg,           12'h 303, 32'h 0000_0000) */  		\
+	                        							\
 	`NERV_CSR_REG_MRW(mie,               12'h 304, 32'h 0000_0000)   /* FIXME */	\
+	                        							\
+	/* mtvec can be implemented as read-only */					\
 	`NERV_CSR_REG_MRW(mtvec,             12'h 305, 32'h 0000_0000)   /* FIXME */	\
-/*	`NERV_CSR_REG_MRW(mcounteren,        12'h 306, 32'h 0000_0000) */
-/*	`NERV_CSR_REG_MRW(mstatush,          12'h 310, 32'h 0000_0000) */
+	                        							\
+	/* mcounteren should only exist if U mode is available */			\
+/*	`NERV_CSR_REG_MRW(mcounteren,        12'h 306, 32'h 0000_0000) */		\
+	                        							\
+	`NERV_CSR_REG_MRW(mstatush,          12'h 310, 32'h 0000_0000)   /* FIXME */
 
 `define NERV_TRAP_HANDLING_CSRS /* Machine Trap Handling CSRs */			\
 	`NERV_CSR_REG_MRW(mscratch,          12'h 340, 32'h 0000_0000)	 		\
@@ -56,8 +67,19 @@
 	`NERV_CSR_REG_MRW(mtinst,            12'h 34A, 32'h 0000_0000)   /* FIXME */	\
 	`NERV_CSR_REG_MRW(mtval2,            12'h 34B, 32'h 0000_0000)   /* FIXME */
 
+`define NERV_MACHINE_CONFIG_CSRS /* machine configuration CSRs */			\
+	/* menvcfg should only exist if U mode is available */				\
+/*	`NERV_CSR_REG_MRW(menvcfg,           12'h 30A, 32'h 0000_0000) */		\
+/*	`NERV_CSR_REG_MRW(menvcfgh,          12'h 31A, 32'h 0000_0000) */		\
+											\
+	/* mseccfg not yet fully defined, and is not currently required */		\
+/*	`NERV_CSR_REG_MRW(mseccfg,           12'h 747, 32'h 0000_0000) */		\
+/*	`NERV_CSR_REG_MRW(mseccfgh,          12'h 757, 32'h 0000_0000) */		\
+
 `ifdef NERV_PMP
+/* PMP is optional and can be implemented with 0, 16, or 64 address CSRS */
 `define NERV_PMP_CFG_CSRS /* Machine Memory Protection Config CSRs */			\
+	/* PMP configuration is 8-bits long, so each cfg controls four PMPs in RV32 */	\
 	`NERV_CSR_VAL_MRW(pmpcfg0,           12'h 3A0, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpcfg1,           12'h 3A1, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(pmpcfg2,           12'h 3A2, 32'h 0000_0000)			\
@@ -149,6 +171,7 @@
 	`NERV_CSR_REG_MRW(mcycle,            12'h B00, 32'h 0000_0000)			\
 	`NERV_CSR_REG_MRW(minstret,          12'h B02, 32'h 0000_0000)			\
 											\
+	/* mhpmcounter3..31 can be readonly 0, provided the event CSR is too */		\
 	`NERV_CSR_VAL_MRW(mhpmcounter3,      12'h B03, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmcounter4,      12'h B04, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmcounter5,      12'h B05, 32'h 0000_0000)			\
@@ -213,7 +236,10 @@
 	`NERV_CSR_VAL_MRW(mhpmcounter31h,    12'h B9F, 32'h 0000_0000)
 
 `define NERV_COUNTER_SETUP_CSRS /* Machine Counter Setup CSRs */			\
+	/* mcountinhibit is optional */							\
 /*	`NERV_CSR_VAL_MRW(mcountinhibit,     12'h 320, 32'h 0000_0000) */		\
+	                        							\
+	/* mhpmevent3..31 can be readonly 0 */						\
 	`NERV_CSR_VAL_MRW(mhpmevent3,        12'h 323, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmevent4,        12'h 324, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRW(mhpmevent5,        12'h 325, 32'h 0000_0000)			\
@@ -248,6 +274,7 @@
 	`NERV_MACHINE_CSRS		\
 	`NERV_TRAP_SETUP_CSRS		\
 	`NERV_TRAP_HANDLING_CSRS	\
+	`NERV_MACHINE_CONFIG_CSRS	\
 	`NERV_PMP_CFG_CSRS		\
 	`NERV_PMP_ADDR_CSRS		\
 	`NERV_COUNTER_CSRS		\
