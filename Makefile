@@ -29,6 +29,13 @@ firmware.hex: firmware.elf
 testbench: testbench.sv nerv.sv
 	iverilog -o testbench -D STALL -D NERV_DBGREGS testbench.sv nerv.sv
 
+check_axi_comb_paths: nervaxi.sv nerv.sv
+	 yosys -ql check_axi_comb_paths.log nervaxi.sv nerv.sv \
+		-p 'hierarchy -top nerv_axi_lite' \
+		-p 'proc; flatten; opt_dff' \
+		-p 'scc -expect 0' \
+		-p 'select -assert-none i:*mem_axi_* %co*:-$$dff o:*mem_axi_* %ci*:-$$dff %i'
+
 check:
 	python3 ../../checks/genchecks.py
 	$(MAKE) -C checks
