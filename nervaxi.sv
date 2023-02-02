@@ -447,3 +447,301 @@ module nerv_axi_lite #(
 	);
 
 endmodule
+
+module axi_tb_fifo_stage #(
+	parameter WIDTH = 8
+) (
+	input clock,
+	input reset,
+
+	input              in_valid,
+	output             in_ready,
+	input  [WIDTH-1:0] in_data,
+
+	output             out_valid,
+	input              out_ready,
+	output [WIDTH-1:0] out_data
+);
+
+	reg [WIDTH-1:0] buffered;
+	reg buffer_valid;
+
+	wire in_txn = in_valid && in_ready;
+	wire out_txn = out_valid && out_ready;
+
+	assign out_data = buffer_valid ? buffered : in_data;
+	assign in_ready = out_ready || !buffer_valid;
+	assign out_valid = in_valid || buffer_valid;
+
+	always @(posedge clock) begin
+		if (reset) begin
+			buffer_valid <= 0;
+		end else begin
+			if (in_txn != out_txn)
+				buffer_valid = in_txn;
+		end
+		if (in_txn)
+			buffered <= in_data;
+	end
+
+endmodule
+
+module axi_tb_fifo #(
+	parameter WIDTH = 8,
+	parameter DEPTH = 3
+) (
+	input clock,
+	input reset,
+
+	input              in_valid,
+	output             in_ready,
+	input  [WIDTH-1:0] in_data,
+
+	output             out_valid,
+	input              out_ready,
+	output [WIDTH-1:0] out_data,
+
+	input              in_stall,
+	input              out_stall
+);
+
+	wire [WIDTH-1:0] stage_data [0:DEPTH];
+	wire [DEPTH:0] stage_valid;
+	wire [DEPTH:0] stage_ready;
+
+	genvar i;
+	generate for (i = 0; i < DEPTH; i = i + 1) begin
+		axi_tb_fifo_stage #(.WIDTH(WIDTH)) stage (
+			.clock(clock),
+			.reset(reset),
+			.in_data(stage_data[i]),
+			.out_data(stage_data[i+1]),
+			.in_valid(stage_valid[i]),
+			.out_valid(stage_valid[i+1]),
+			.in_ready(stage_ready[i]),
+			.out_ready(stage_ready[i+1])
+		);
+	end endgenerate
+
+	axi_tb_stall #(.WIDTH(WIDTH)) in_staller (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(in_valid),
+		.in_ready(in_ready),
+		.out_valid(stage_valid[0]),
+		.out_ready(stage_ready[0]),
+		.stall(in_stall)
+	);
+
+	axi_tb_stall #(.WIDTH(WIDTH)) out_staller (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(stage_valid[DEPTH]),
+		.in_ready(stage_ready[DEPTH]),
+		.out_valid(out_valid),
+		.out_ready(out_ready),
+		.stall(out_stall)
+	);
+
+	assign stage_data[0] = in_data;
+
+	assign out_data = out_valid ? stage_data[DEPTH] : 'x;
+endmodule
+
+module axi_tb_stall #(
+	parameter WIDTH = 8
+) (
+	input clock,
+	input reset,
+
+	input  in_valid,
+	output in_ready,
+
+	output out_valid,
+	input  out_ready,
+
+	input  stall
+);
+
+	reg stuck;
+
+	always @(posedge clock) begin
+
+		if (reset) begin
+			stuck <= 0;
+		end else begin
+			stuck <= out_valid && !out_ready;
+		end
+	end
+
+	wire connect = stuck || !stall;
+
+	assign out_valid = in_valid && connect;
+	assign in_ready = out_ready && connect;
+endmodule
+
+
+typedef struct packed {
+	logic [31:0] addr;
+	logic [ 2:0] prot;
+} axi_ar_record;
+
+// Testbench helper providing a AXI4-Lite subordinate read interface
+//
+// Can test all allowed timings but does not handle multiple in-flight reads.
+module axi_lite_s_read_tester(
+	input clock,
+	input reset,
+
+	// AXI4-Lite read interface
+	input             axi_arvalid,
+	output            axi_arready,
+	input      [31:0] axi_araddr,
+	input      [ 2:0] axi_arprot,
+
+	output            axi_rvalid,
+	input             axi_rready,
+	output     [31:0] axi_rdata,
+	output     [ 1:0] axi_rresp,
+
+	// test signals
+	input      [ 1:0] stall,
+
+	output            read_txn,
+	output     [31:0] read_addr, // valid when read_txn is set
+	output     [ 2:0] read_prot, // valid when read_txn is set
+	input      [31:0] read_data, // sampled 1 cycle after read_txn was set
+	input      [ 1:0] read_resp // sampled 1 cycle after read_txn was set
+);
+
+	axi_tb_fifo #(.WIDTH(32 + 3), .DEPTH(1)) arfifo (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(axi_arvalid),
+		.in_ready(axi_arready),
+		.in_data({axi_araddr, axi_arprot}),
+
+		.out_valid(read_txn),
+		.out_ready(1'b1),
+		.out_data({read_addr, read_prot}),
+
+		.in_stall(stall[0]),
+		.out_stall(1'b0)
+	);
+
+	reg read_txn_q;
+
+	always @(posedge clock)
+		if (reset)
+			read_txn_q <= 0;
+		else
+			read_txn_q <= read_txn;
+
+	axi_tb_fifo #(.WIDTH(32 + 2), .DEPTH(1)) rfifo (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(read_txn_q),
+		.in_data({read_data, read_resp}),
+
+		.out_valid(axi_rvalid),
+		.out_ready(axi_rready),
+		.out_data({axi_rdata, axi_rresp}),
+
+
+		.in_stall(1'b0),
+		.out_stall(stall[1])
+	);
+endmodule
+
+// Testbench helper providing a AXI4-Lite subordinate write interface
+//
+// Can test all allowed timings but does not handle multiple in-flight writes.
+module axi_lite_s_write_tester(
+	input clock,
+	input reset,
+
+	// AXI4-Lite memory interface
+	input             axi_awvalid,
+	output            axi_awready,
+	input      [31:0] axi_awaddr,
+	input      [ 2:0] axi_awprot,
+
+	input             axi_wvalid,
+	output            axi_wready,
+	input      [31:0] axi_wdata,
+	input      [ 3:0] axi_wstrb,
+
+	output            axi_bvalid,
+	input             axi_bready,
+	output     [ 1:0] axi_bresp,
+
+	// test signals
+	input      [ 2:0] stall,
+
+	output            write_txn,
+	output     [31:0] write_addr, // valid when read_txn is set
+	output     [ 2:0] write_prot, // valid when read_txn is set
+	output     [31:0] write_data, // valid when read_txn is set
+	output     [ 3:0] write_wstrb, // valid when read_txn is set
+	input      [ 1:0] write_resp // sampled 1 cycle after read_txn was set
+);
+
+	wire awfifo_valid;
+	wire wfifo_valid;
+
+	assign write_txn = awfifo_valid && wfifo_valid;
+
+	axi_tb_fifo #(.WIDTH(32 + 3), .DEPTH(1)) awfifo (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(axi_awvalid),
+		.in_ready(axi_awready),
+		.in_data({axi_awaddr, axi_awprot}),
+
+		.out_valid(awfifo_valid),
+		.out_ready(wfifo_valid),
+		.out_data({write_addr, write_prot}),
+
+		.in_stall(stall[0]),
+		.out_stall(1'b0)
+	);
+
+	axi_tb_fifo #(.WIDTH(32 + 4), .DEPTH(1)) wfifo (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(axi_wvalid),
+		.in_ready(axi_wready),
+		.in_data({axi_wdata, axi_wstrb}),
+
+		.out_valid(wfifo_valid),
+		.out_ready(awfifo_valid),
+		.out_data({write_data, write_wstrb}),
+
+		.in_stall(stall[1]),
+		.out_stall(1'b0)
+	);
+
+
+	reg write_txn_q;
+
+	always @(posedge clock)
+		if (reset)
+			write_txn_q <= 0;
+		else
+			write_txn_q <= write_txn;
+
+	axi_tb_fifo #(.WIDTH(2), .DEPTH(1)) bfifo (
+		.clock(clock),
+		.reset(reset),
+		.in_valid(write_txn_q),
+		.in_data(write_resp),
+
+		.out_valid(axi_bvalid),
+		.out_ready(axi_bready),
+		.out_data(axi_bresp),
+
+		.in_stall(1'b0),
+		.out_stall(stall[2])
+	);
+
+endmodule
