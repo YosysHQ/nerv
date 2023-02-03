@@ -129,5 +129,13 @@ testbench.dut.mem_wr_enable
 testbench.dut.mem_wr_addr[31:0]
 testbench.dut.mem_wr_data[31:0]
 testbench.dut.mem_wr_strb[3:0]
+@200
+-
+-CSRs
+@24
+testbench.dut.csr_mcycle_value[31:0]
+testbench.dut.csr_minstret_value[31:0]
+@28
+testbench.dut.csr_mstatus_value[31:0]
 [pattern_trace] 1
 [pattern_trace] 0

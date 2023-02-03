@@ -593,6 +593,35 @@ module nerv #(
 		if (running) begin
 			{csr_minstreth_next, csr_minstret_next} = {csr_minstreth_next, csr_minstret_next} + 1;
 		end
+
+        // mstatus and mstatush
+        csr_mstatus_next[31] = 'b0; // SD is always 0 if FS, VS, and XS are not enabled
+        csr_mstatus_next[30:23] = 'b0; // WPRI
+        csr_mstatus_next[22] = 'b0; // TSR = 0 if no S
+        csr_mstatus_next[21] = 'b0; // TW = 0 if no U or S
+        csr_mstatus_next[20] = 'b0; // TVM = 0 if no S
+        csr_mstatus_next[19] = 'b0; // MXR = 0 if no S
+        csr_mstatus_next[18] = 'b0; // SUM = 0 if no S
+        csr_mstatus_next[17] = 'b0; // MPRV = 0 if no U
+        csr_mstatus_next[16:15] = 'b0; // XS = 0 if no user extensions
+        csr_mstatus_next[14:13] = 'b0; // FS = 0 if no S and no floating point extension
+        csr_mstatus_next[12:11] = 2'b11; // MPP = b11 if no U
+        csr_mstatus_next[10:9] = 'b0; // VS = 0 if no vector extension
+        csr_mstatus_next[8] = 'b0; // SPP = 0 if no S
+        //csr_mstatus_next[7] = ; // MPIE controlled by trap handling
+        csr_mstatus_next[6] = 'b0; // UBE = 0 if no U
+        csr_mstatus_next[5] = 'b0; // SPIE = 0 if no S
+        csr_mstatus_next[4] = 'b0; // WPRI
+        //csr_mstatus_next[3] = ; // MIE controlled by code
+        csr_mstatus_next[2] = 'b0; // WPRI
+        csr_mstatus_next[1] = 'b0; // SIE = 0 if no S
+        csr_mstatus_next[0] = 'b0; // WPRI
+
+        csr_mstatush_next[31:6] = 'b0; // WPRI
+        csr_mstatush_next[5] = 1'b0; // MBE = 1 if big endian, 0 if little endian
+        csr_mstatush_next[4] = 'b0; // SBE = 0 if no S
+        csr_mstatush_next[3:0] = 'b0; // WPRI
+
 `endif // NERV_CSR
 
 		// act on opcodes
