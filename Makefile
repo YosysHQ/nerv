@@ -17,8 +17,10 @@
 
 TOOLCHAIN_PREFIX?=riscv64-unknown-elf-
 
+STALL?=0
+
 test: firmware.hex testbench
-	vvp -N testbench +vcd
+	vvp -N testbench +vcd +stall=$(STALL)
 
 firmware.elf: firmware.s firmware.c
 	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -mabi=ilp32 -Os -Wall -Wextra -Wl,-Bstatic,-T,sections.lds,--strip-debug -ffreestanding -nostdlib -o $@ $^
@@ -27,7 +29,7 @@ firmware.hex: firmware.elf
 	$(TOOLCHAIN_PREFIX)objcopy -O verilog $< $@
 
 testbench: testbench.sv nerv.sv
-	iverilog -o testbench -D STALL -D NERV_DBGREGS testbench.sv nerv.sv
+	iverilog -g 2012 -o $@ -D NERV_DBGREGS $^
 
 check_axi_comb_paths: nervaxi.sv nerv.sv
 	 yosys -ql check_axi_comb_paths.log nervaxi.sv nerv.sv \

@@ -55,11 +55,17 @@ always @(posedge clock) begin
 	end
 end
 
-`ifdef STALL
-always @(posedge clock) begin
-	stall <= $random;
+integer stall_seed;
+
+initial begin
+    if (!$value$plusargs("stall=%d", stall_seed))
+        stall_seed = 0;
 end
-`endif
+
+always @(posedge clock) begin
+    if (stall_seed != 0)
+        stall <= $random(stall_seed);
+end
 
 always @(posedge clock) begin
 	if (imem_addr >= (1<<MEM_ADDR_WIDTH)) begin
