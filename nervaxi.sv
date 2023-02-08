@@ -587,8 +587,6 @@ typedef struct packed {
 } axi_ar_record;
 
 // Testbench helper providing a AXI4-Lite subordinate read interface
-//
-// Can test all allowed timings but does not handle multiple in-flight reads.
 module axi_lite_s_read_tester(
 	input clock,
 	input reset,
@@ -641,6 +639,7 @@ module axi_lite_s_read_tester(
 		.clock(clock),
 		.reset(reset),
 		.in_valid(read_txn_q),
+		.in_ready(),
 		.in_data({read_data, read_resp}),
 
 		.out_valid(axi_rvalid),
@@ -654,8 +653,6 @@ module axi_lite_s_read_tester(
 endmodule
 
 // Testbench helper providing a AXI4-Lite subordinate write interface
-//
-// Can test all allowed timings but does not handle multiple in-flight writes.
 module axi_lite_s_write_tester(
 	input clock,
 	input reset,
@@ -734,6 +731,7 @@ module axi_lite_s_write_tester(
 		.clock(clock),
 		.reset(reset),
 		.in_valid(write_txn_q),
+		.in_ready(),
 		.in_data(write_resp),
 
 		.out_valid(axi_bvalid),

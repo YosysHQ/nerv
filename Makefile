@@ -22,6 +22,9 @@ STALL?=0
 test: firmware.hex testbench
 	vvp -N testbench +vcd +stall=$(STALL)
 
+test_axi: firmware.hex testbench_axi
+	vvp -N testbench_axi +vcd +stall=$(STALL)
+
 firmware.elf: firmware.s firmware.c
 	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -mabi=ilp32 -Os -Wall -Wextra -Wl,-Bstatic,-T,sections.lds,--strip-debug -ffreestanding -nostdlib -o $@ $^
 
@@ -29,6 +32,9 @@ firmware.hex: firmware.elf
 	$(TOOLCHAIN_PREFIX)objcopy -O verilog $< $@
 
 testbench: testbench.sv nerv.sv
+	iverilog -g 2012 -o $@ -D NERV_DBGREGS $^
+
+testbench_axi: testbench_axi.sv nerv.sv nervaxi.sv
 	iverilog -g 2012 -o $@ -D NERV_DBGREGS $^
 
 check_axi_comb_paths: nervaxi.sv nerv.sv
@@ -46,6 +52,9 @@ check:
 
 show:
 	gtkwave testbench.vcd testbench.gtkw >> gtkwave.log 2>&1 &
+
+show_axi:
+	gtkwave testbench_axi.vcd testbench_axi.gtkw >> gtkwave.log 2>&1 &
 
 clean:
 	rm -rf firmware.elf firmware.hex testbench testbench.vcd gtkwave.log

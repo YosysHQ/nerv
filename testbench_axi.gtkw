@@ -1,0 +1,223 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Tue Oct 20 19:25:31 2020
+[*]
+[dumpfile] "testbench.vcd"
+[dumpfile_mtime] "Tue Oct 20 19:24:49 2020"
+[dumpfile_size] 76428
+[savefile] "testbench.gtkw"
+[timestart] 305
+[size] 1397 995
+[pos] -1 -1
+*-6.000000 497 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] testbench.
+[sst_width] 240
+[signals_width] 174
+[sst_expanded] 1
+[sst_vpaned_height] 289
+@28
+testbench.dut.nerv.clock
+testbench.dut.nerv.reset
+testbench.dut.nerv.stall
+testbench.dut.nerv.trap
+@200
+-
+@22
+testbench.dut.nerv.imem_addr[31:0]
+testbench.dut.nerv.imem_data[31:0]
+@200
+-
+@28
+testbench.dut.nerv.dmem_valid
+@22
+testbench.dut.nerv.dmem_addr[31:0]
+testbench.dut.nerv.dmem_wstrb[3:0]
+testbench.dut.nerv.dmem_wdata[31:0]
+testbench.dut.nerv.dmem_rdata[31:0]
+@200
+-
+@22
+testbench.dut.nerv.pc[31:0]
+testbench.dut.nerv.insn[31:0]
+@28
+testbench.dut.nerv.illinsn
+@c00200
+-insn_decoded
+@22
+testbench.dut.nerv.insn_funct7[6:0]
+testbench.dut.nerv.insn_rs2[4:0]
+testbench.dut.nerv.insn_rs1[4:0]
+@28
+testbench.dut.nerv.insn_funct3[2:0]
+@22
+testbench.dut.nerv.insn_rd[4:0]
+testbench.dut.nerv.insn_opcode[6:0]
+@200
+-
+@22
+testbench.dut.nerv.imm_b_sext[31:0]
+testbench.dut.nerv.imm_i_sext[31:0]
+testbench.dut.nerv.imm_j_sext[31:0]
+testbench.dut.nerv.imm_s_sext[31:0]
+@1401200
+-insn_decoded
+@22
+testbench.dut.nerv.rs1_value[31:0]
+testbench.dut.nerv.rs2_value[31:0]
+@28
+testbench.dut.nerv.next_wr
+@22
+testbench.dut.nerv.next_rd[31:0]
+@c00201
+-registers
+@22
+testbench.dut.nerv.dbg_reg_x0[31:0]
+testbench.dut.nerv.dbg_reg_x1[31:0]
+testbench.dut.nerv.dbg_reg_x2[31:0]
+testbench.dut.nerv.dbg_reg_x3[31:0]
+testbench.dut.nerv.dbg_reg_x4[31:0]
+testbench.dut.nerv.dbg_reg_x5[31:0]
+testbench.dut.nerv.dbg_reg_x6[31:0]
+testbench.dut.nerv.dbg_reg_x7[31:0]
+testbench.dut.nerv.dbg_reg_x8[31:0]
+testbench.dut.nerv.dbg_reg_x9[31:0]
+testbench.dut.nerv.dbg_reg_x10[31:0]
+testbench.dut.nerv.dbg_reg_x11[31:0]
+testbench.dut.nerv.dbg_reg_x12[31:0]
+testbench.dut.nerv.dbg_reg_x13[31:0]
+testbench.dut.nerv.dbg_reg_x14[31:0]
+testbench.dut.nerv.dbg_reg_x15[31:0]
+testbench.dut.nerv.dbg_reg_x16[31:0]
+testbench.dut.nerv.dbg_reg_x17[31:0]
+testbench.dut.nerv.dbg_reg_x18[31:0]
+testbench.dut.nerv.dbg_reg_x19[31:0]
+testbench.dut.nerv.dbg_reg_x20[31:0]
+testbench.dut.nerv.dbg_reg_x21[31:0]
+testbench.dut.nerv.dbg_reg_x22[31:0]
+testbench.dut.nerv.dbg_reg_x23[31:0]
+testbench.dut.nerv.dbg_reg_x24[31:0]
+testbench.dut.nerv.dbg_reg_x25[31:0]
+testbench.dut.nerv.dbg_reg_x26[31:0]
+testbench.dut.nerv.dbg_reg_x27[31:0]
+testbench.dut.nerv.dbg_reg_x28[31:0]
+testbench.dut.nerv.dbg_reg_x29[31:0]
+testbench.dut.nerv.dbg_reg_x30[31:0]
+testbench.dut.nerv.dbg_reg_x31[31:0]
+@1401201
+-registers
+@200
+-
+@28
+testbench.dut.nerv.mem_rd_enable
+@22
+testbench.dut.nerv.mem_rd_addr[31:0]
+testbench.dut.nerv.mem_rd_func[4:0]
+testbench.dut.nerv.mem_rd_reg[4:0]
+@200
+-
+@28
+testbench.dut.nerv.mem_rd_enable_q
+@22
+testbench.dut.nerv.mem_rd_func_q[4:0]
+testbench.dut.nerv.mem_rd_reg_q[4:0]
+testbench.dut.nerv.mem_rdata[31:0]
+@200
+-
+@28
+testbench.dut.nerv.mem_wr_enable
+@22
+testbench.dut.nerv.mem_wr_addr[31:0]
+testbench.dut.nerv.mem_wr_data[31:0]
+testbench.dut.nerv.mem_wr_strb[3:0]
+@c00201
+-AXI imem reads
+@29
+testbench.test_imem_read.read_txn
+@23
+testbench.test_imem_read.read_addr[31:0]
+@29
+testbench.test_imem_read.read_prot[2:0]
+@23
+testbench.test_imem_read.read_data[31:0]
+@29
+testbench.test_imem_read.read_resp[1:0]
+@c00201
+-AXI bus
+@22
+testbench.test_imem_read.axi_araddr[31:0]
+@28
+testbench.test_imem_read.axi_arprot[2:0]
+testbench.test_imem_read.axi_arready
+testbench.test_imem_read.axi_arvalid
+@22
+testbench.test_imem_read.axi_rdata[31:0]
+@28
+testbench.test_imem_read.axi_rready
+testbench.test_imem_read.axi_rresp[1:0]
+testbench.test_imem_read.axi_rvalid
+@1401201
+-AXI bus
+-AXI imem reads
+@c00200
+-AXI dmem reads
+@28
+testbench.test_dmem_read.read_txn
+@22
+testbench.test_dmem_read.read_addr[31:0]
+@28
+testbench.test_dmem_read.read_prot[2:0]
+@22
+testbench.test_dmem_read.read_data[31:0]
+@28
+testbench.test_dmem_read.read_resp[1:0]
+@c00200
+-AXI bus
+@22
+testbench.test_dmem_read.axi_araddr[31:0]
+@28
+testbench.test_dmem_read.axi_arprot[2:0]
+testbench.test_dmem_read.axi_arready
+testbench.test_dmem_read.axi_arvalid
+@22
+testbench.test_dmem_read.axi_rdata[31:0]
+@28
+testbench.test_dmem_read.axi_rready
+testbench.test_dmem_read.axi_rresp[1:0]
+testbench.test_dmem_read.axi_rvalid
+@1401200
+-AXI bus
+-AXI dmem reads
+@c00200
+-AXI dmem writes
+@28
+testbench.test_dmem_write.write_txn
+@22
+testbench.test_dmem_write.write_addr[31:0]
+testbench.test_dmem_write.write_data[31:0]
+@28
+testbench.test_dmem_write.write_prot[2:0]
+testbench.test_dmem_write.write_resp[1:0]
+@c00200
+-AXI bus
+@22
+testbench.test_dmem_write.axi_awaddr[31:0]
+@28
+testbench.test_dmem_write.axi_awprot[2:0]
+testbench.test_dmem_write.axi_awready
+testbench.test_dmem_write.axi_awvalid
+testbench.test_dmem_write.axi_bready
+testbench.test_dmem_write.axi_bresp[1:0]
+testbench.test_dmem_write.axi_bvalid
+@22
+testbench.test_dmem_write.axi_wdata[31:0]
+@28
+testbench.test_dmem_write.axi_wready
+@22
+testbench.test_dmem_write.axi_wstrb[3:0]
+@28
+testbench.test_dmem_write.axi_wvalid
+@1401200
+-AXI bus
+-AXI dmem writes
+[pattern_trace] 1
+[pattern_trace] 0
