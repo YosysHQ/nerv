@@ -800,11 +800,25 @@ module nerv #(
 			end
 `ifdef NERV_CSR
 			OPCODE_SYSTEM: begin
-				if (csr_ack) begin
-					next_wr = 1;
-					next_rd = csr_rdval;
-				end else
-					illinsn = 1;
+				case (insn_funct3)
+					3'b 000 : begin 
+						case ({insn_funct7, insn_rs2})
+							12'b 0000000_00000 /* ECALL */: begin end // TODO
+							12'b 0000000_00001 /* EBREAK */: begin illinsn = 1; end // itentional illegal instruction
+							12'b 0011000_00010 /* MRET */: begin end // TODO
+							12'b 0001000_00101 /* WFI */: begin end // implemented as NOP
+							default: illinsn = 1;
+						endcase
+					end
+					3'b 001 : begin 
+						if (csr_ack) begin
+							next_wr = 1;
+							next_rd = csr_rdval;
+						end else
+							illinsn = 1;
+					end
+					default: illinsn = 1;
+				endcase
 			end
 `endif
 			default: illinsn = 1;
