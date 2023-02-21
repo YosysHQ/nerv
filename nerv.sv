@@ -744,7 +744,7 @@ module nerv #(
 
 	// every cycle
 	always @(posedge clock) begin
-		reset_q <= reset;
+		reset_q <= reset || (reset_q && stall);
 		trapped_q <= trapped;
 
 		// increment pc if possible
