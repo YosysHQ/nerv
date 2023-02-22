@@ -471,6 +471,16 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
+    localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 5'b10011;
+	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 5'b10111;
+	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 5'b11011;
+    
+	localparam MCAUSE_ADDRESS_MISALIGNED     = 5'b00000;
+	localparam MCAUSE_ACCESS_FAULT           = 5'b00001;
+	localparam MCAUSE_INVALID_INSTRUCTION    = 5'b00010;
+    localparam MCAUSE_BREAKPOINT             = 5'b00011;
+    localparam MCAUSE_ECALL_M_MODE           = 5'b01011;
+
 	// next write, next destination (rd), illegal instruction registers
 	reg next_wr;
 	reg [31:0] next_rd;
@@ -667,9 +677,10 @@ module nerv #(
 	csr_mip_next[0] = 'b0; // 0
 
 	// mtvec - Machine Trap-Vector Base-Address
-	/* FIXME */
-	csr_mtvec_next[31:2] = 'b0; // BASE - vector base address
-	csr_mtvec_next[1:0] = 'b0; // MODE - vector mode
+	csr_mtvec_next[1] = 'b0; // MODE - keep high bit always 0
+
+	// mepc - keep alignment
+	csr_mepc_next[1:0] = 'b0;
 
 `endif // NERV_CSR
 
@@ -803,21 +814,51 @@ module nerv #(
 				case (insn_funct3)
 					3'b 000 : begin 
 						case ({insn_funct7, insn_rs2})
-							12'b 0000000_00000 /* ECALL */: begin end // TODO
-							12'b 0000000_00001 /* EBREAK */: begin illinsn = 1; end // itentional illegal instruction
-							12'b 0011000_00010 /* MRET */: begin end // TODO
+							12'b 0000000_00000 /* ECALL */: begin 
+																//$display("ECALL\n"); 
+																next_wr = 0;
+																next_rd = 0;
+																csr_mepc_next[31:2] = pc[31:2];
+																//$display("%08x\n",csr_mepc_next);
+																if (csr_mtvec_value & 1)
+																	npc = (csr_mtvec_value & ~3) + (MCAUSE_ECALL_M_MODE << 2);
+																else
+																	npc = csr_mtvec_value;
+																//$display("%08x\n",npc);
+																csr_mcause_next = MCAUSE_ECALL_M_MODE;
+															end // TODO
+							12'b 0000000_00001 /* EBREAK */: begin
+																//$display("EBREAK\n");
+																next_wr = 0;
+																next_rd = 0;
+																csr_mepc_next[31:2] = pc[31:2];
+																//$display("%08x\n",csr_mepc_next);
+																if (csr_mtvec_value & 1)
+																	npc = (csr_mtvec_value & ~3) + (MCAUSE_BREAKPOINT << 2);
+																else
+																	npc = csr_mtvec_value;
+																//$display("%08x\n",npc);
+																csr_mcause_next = MCAUSE_BREAKPOINT;
+															end
+							12'b 0011000_00010 /* MRET */:  begin
+																//$display("mret\n");
+																next_wr = 0;
+																next_rd = 0;
+																//$display("%08x\n",csr_mepc_value);
+																npc = csr_mepc_value;
+																csr_mcause_next = 0;
+															end
 							12'b 0001000_00101 /* WFI */: begin end // implemented as NOP
 							default: illinsn = 1;
 						endcase
 					end
-					3'b 001 : begin 
+					default : begin 
 						if (csr_ack) begin
 							next_wr = 1;
 							next_rd = csr_rdval;
 						end else
 							illinsn = 1;
 					end
-					default: illinsn = 1;
 				endcase
 			end
 `endif
@@ -841,6 +882,20 @@ module nerv #(
 			mem_rd_enable = 0;
 			mem_wr_enable = 0;
 		end
+
+		// illegal
+		if (illinsn) begin // TODO
+			//next_wr = 0;
+			//next_rd = 0;
+			//csr_mepc_next[31:2] = pc[31:2];
+			//$display("%08x\n",csr_mepc_next);
+			//if (csr_mtvec_value & 1)
+			//  npc = (csr_mtvec_value & ~3) + (MCAUSE_INVALID_INSTRUCTION << 2);
+			//else
+			//   npc = csr_mtvec_value;
+			//csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
+		end
+
 	end
 
 	reg [31:0] mem_rdata;

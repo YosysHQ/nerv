@@ -56,6 +56,11 @@ addi x31, zero, 0
 # place SP at the end of RAM
 li sp, 0x00010000
 
+# set vector table address and vectored mode
+la a0, __vector_start
+ori a0, a0, 0x1
+csrw mtvec, a0
+
 # copy data section
 la a0, _sidata
 la a1, _sdata
@@ -82,5 +87,11 @@ end_init_bss:
 # call main
 call main
 
+#ecall
+#wfi
+
 # halt
 ebreak
+
+end_of_file:
+j end_of_file
