@@ -19,8 +19,6 @@
 vector_table:
 	j sw_irq_handler
 	j __no_irq_handler
-	j handle_illegal_insn
-	j handle_ebreak
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
@@ -28,7 +26,9 @@ vector_table:
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
-	j handle_ecall
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler

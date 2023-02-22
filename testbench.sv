@@ -36,6 +36,8 @@ wire [ 3:0] dmem_wstrb;
 wire [31:0] dmem_wdata;
 reg  [31:0] dmem_rdata;
 
+reg  [31:0] irq = 'b0;
+
 always #5 clock = clock === 1'b0;
 always @(posedge clock) reset <= 0;
 
@@ -128,7 +130,9 @@ nerv dut (
 	.dmem_addr(dmem_addr),
 	.dmem_wstrb(dmem_wstrb),
 	.dmem_wdata(dmem_wdata),
-	.dmem_rdata(stall ? 32'bx : dmem_rdata)
+	.dmem_rdata(stall ? 32'bx : dmem_rdata),
+
+	.irq(irq)
 );
 
 reg [31:0] cycles = 0;

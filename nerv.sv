@@ -348,7 +348,9 @@ module nerv #(
 	output [31:0] dmem_addr,
 	output [ 3:0] dmem_wstrb,
 	output [31:0] dmem_wdata,
-	input  [31:0] dmem_rdata
+	input  [31:0] dmem_rdata,
+    // interrupt inputs
+	input  [31:0] irq
 );
 	reg mem_wr_enable;
 	reg [31:0] mem_wr_addr;
@@ -471,15 +473,17 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
-    localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 5'b10011;
-	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 5'b10111;
-	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 5'b11011;
+    localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 32'h80000003;
+	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 32'h80000007;
+	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 32'h8000000b;
     
-	localparam MCAUSE_ADDRESS_MISALIGNED     = 5'b00000;
-	localparam MCAUSE_ACCESS_FAULT           = 5'b00001;
-	localparam MCAUSE_INVALID_INSTRUCTION    = 5'b00010;
-    localparam MCAUSE_BREAKPOINT             = 5'b00011;
-    localparam MCAUSE_ECALL_M_MODE           = 5'b01011;
+	localparam MCAUSE_ADDRESS_MISALIGNED     = 32'h00000000;
+	localparam MCAUSE_ACCESS_FAULT           = 32'h00000001;
+	localparam MCAUSE_INVALID_INSTRUCTION    = 32'h00000002;
+    localparam MCAUSE_BREAKPOINT             = 32'h00000003;
+    localparam MCAUSE_ECALL_M_MODE           = 32'h0000000b;
+
+	localparam IRQ_MASK = 32'hFFFF0888;
 
 	// next write, next destination (rd), illegal instruction registers
 	reg next_wr;
@@ -645,40 +649,44 @@ module nerv #(
 	// mie - Machine Interrupt-Enable
 	// A bit in mie must be writable if the corresponding interrupt can ever become pending.
 	// Bits of mie that are not writable must be read-only 0.
-	csr_mie_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
+	//csr_mie_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
 	csr_mie_next[15:12] = 'b0; // 0
-	csr_mie_next[11] = 'b0; // MEIE - Machine-level External Interrupt Enable
+	//csr_mie_next[11] = 'b0; // MEIE - Machine-level External Interrupt Enable
 	csr_mie_next[10] = 'b0; // 0
 	csr_mie_next[9] = 'b0; // SEIE = 0 if no S
 	csr_mie_next[8] = 'b0; // 0 
-	csr_mie_next[7] = 'b0; // MTIE - Machine Timer Interrupt Enable
+	//csr_mie_next[7] = 'b0; // MTIE - Machine Timer Interrupt Enable
 	csr_mie_next[6] = 'b0; // 0
 	csr_mie_next[5] = 'b0; // STIE = 0 if no S
 	csr_mie_next[4] = 'b0; // 0
-	csr_mie_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Enable
+	//csr_mie_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Enable
 	csr_mie_next[2] = 'b0; // 0
 	csr_mie_next[1] = 'b0; // SSIE = 0 if no S
 	csr_mie_next[0] = 'b0; // 0
 
 	// mip - Machine Interrupt-Pending
-	csr_mip_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
-	csr_mip_next[15:12] = 'b0; // 0
-	csr_mip_next[11] = 'b0; // MEIE - Machine-level External Interrupt Pending
-	csr_mip_next[10] = 'b0; // 0
-	csr_mip_next[9] = 'b0; // SEIE = 0 if no S
-	csr_mip_next[8] = 'b0; // 0 
-	csr_mip_next[7] = 'b0; // MTIE - Machine Timer Interrupt Pending
-	csr_mip_next[6] = 'b0; // 0
-	csr_mip_next[5] = 'b0; // STIE = 0 if no S
-	csr_mip_next[4] = 'b0; // 0
-	csr_mip_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Pending
-	csr_mip_next[2] = 'b0; // 0
-	csr_mip_next[1] = 'b0; // SSIE = 0 if no S
-	csr_mip_next[0] = 'b0; // 0
+	//csr_mip_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
+	//csr_mip_next[15:12] = 'b0; // 0
+	//csr_mip_next[11] = 'b0; // MEIE - Machine-level External Interrupt Pending
+	//csr_mip_next[10] = 'b0; // 0
+	//csr_mip_next[9] = 'b0; // SEIE = 0 if no S
+	//csr_mip_next[8] = 'b0; // 0 
+	//csr_mip_next[7] = 'b0; // MTIE - Machine Timer Interrupt Pending
+	//csr_mip_next[6] = 'b0; // 0
+	//csr_mip_next[5] = 'b0; // STIE = 0 if no S
+	//csr_mip_next[4] = 'b0; // 0
+	//csr_mip_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Pending
+	//csr_mip_next[2] = 'b0; // 0
+	//csr_mip_next[1] = 'b0; // SSIE = 0 if no S
+	//csr_mip_next[0] = 'b0; // 0
+	csr_mip_next = irq & IRQ_MASK;
 
 	// mtvec - Machine Trap-Vector Base-Address
 	csr_mtvec_next[1] = 'b0; // MODE - keep high bit always 0
 
+	// mcause - keep these bits at 0
+	csr_mcause_next[30:5] ='b0;
+	
 	// mepc - keep alignment
 	csr_mepc_next[1:0] = 'b0;
 
@@ -818,12 +826,9 @@ module nerv #(
 																//$display("ECALL\n"); 
 																next_wr = 0;
 																next_rd = 0;
-																csr_mepc_next[31:2] = pc[31:2];
+																csr_mepc_next = { pc[31:2], 2'b00 };
 																//$display("%08x\n",csr_mepc_next);
-																if (csr_mtvec_value & 1)
-																	npc = (csr_mtvec_value & ~3) + (MCAUSE_ECALL_M_MODE << 2);
-																else
-																	npc = csr_mtvec_value;
+																npc = csr_mtvec_value & ~3;
 																//$display("%08x\n",npc);
 																csr_mcause_next = MCAUSE_ECALL_M_MODE;
 															end // TODO
@@ -831,12 +836,9 @@ module nerv #(
 																//$display("EBREAK\n");
 																next_wr = 0;
 																next_rd = 0;
-																csr_mepc_next[31:2] = pc[31:2];
+																csr_mepc_next = { pc[31:2], 2'b00 };
 																//$display("%08x\n",csr_mepc_next);
-																if (csr_mtvec_value & 1)
-																	npc = (csr_mtvec_value & ~3) + (MCAUSE_BREAKPOINT << 2);
-																else
-																	npc = csr_mtvec_value;
+																npc = csr_mtvec_value & ~3;
 																//$display("%08x\n",npc);
 																csr_mcause_next = MCAUSE_BREAKPOINT;
 															end
@@ -846,7 +848,7 @@ module nerv #(
 																next_rd = 0;
 																//$display("%08x\n",csr_mepc_value);
 																npc = csr_mepc_value;
-																csr_mcause_next = 0;
+																csr_mcause_next = 'b0;
 															end
 							12'b 0001000_00101 /* WFI */: begin end // implemented as NOP
 							default: illinsn = 1;
@@ -889,10 +891,7 @@ module nerv #(
 			//next_rd = 0;
 			//csr_mepc_next[31:2] = pc[31:2];
 			//$display("%08x\n",csr_mepc_next);
-			//if (csr_mtvec_value & 1)
-			//  npc = (csr_mtvec_value & ~3) + (MCAUSE_INVALID_INSTRUCTION << 2);
-			//else
-			//   npc = csr_mtvec_value;
+			//npc = csr_mtvec_value & ~3;
 			//csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
 		end
 

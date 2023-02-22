@@ -61,6 +61,15 @@ la a0, __vector_start
 ori a0, a0, 0x1
 csrw mtvec, a0
 
+# enable all interrupts
+li a0, 0xffffffff
+csrw mie, a0
+
+# set mie bit
+csrr a0, mstatus
+ori a0, a0, 0x8
+csrw mstatus, a0
+
 # copy data section
 la a0, _sidata
 la a1, _sdata
