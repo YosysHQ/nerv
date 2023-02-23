@@ -831,6 +831,8 @@ module nerv #(
 																npc = csr_mtvec_value & ~3;
 																//$display("%08x\n",npc);
 																csr_mcause_next = MCAUSE_ECALL_M_MODE;
+																csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+																csr_mstatus_next[3] = 0; // MIE to 0
 															end // TODO
 							12'b 0000000_00001 /* EBREAK */: begin
 																//$display("EBREAK\n");
@@ -841,6 +843,8 @@ module nerv #(
 																npc = csr_mtvec_value & ~3;
 																//$display("%08x\n",npc);
 																csr_mcause_next = MCAUSE_BREAKPOINT;
+																csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+																csr_mstatus_next[3] = 0; // MIE to 0
 															end
 							12'b 0011000_00010 /* MRET */:  begin
 																//$display("mret\n");
@@ -849,6 +853,7 @@ module nerv #(
 																//$display("%08x\n",csr_mepc_value);
 																npc = csr_mepc_value;
 																csr_mcause_next = 'b0;
+																csr_mstatus_next[3] = csr_mstatus_value[7];  // restore MIE from MPIE
 															end
 							12'b 0001000_00101 /* WFI */: begin end // implemented as NOP
 							default: illinsn = 1;
@@ -883,6 +888,7 @@ module nerv #(
 			illinsn = 0;
 			mem_rd_enable = 0;
 			mem_wr_enable = 0;
+			csr_mstatus_next[3] = 0; // MIE
 		end
 
 		// illegal
@@ -893,6 +899,8 @@ module nerv #(
 			//$display("%08x\n",csr_mepc_next);
 			//npc = csr_mtvec_value & ~3;
 			//csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
+			//csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+			//csr_mstatus_next[3] = 0; // MIE to 0
 		end
 
 	end
