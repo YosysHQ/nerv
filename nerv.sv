@@ -537,6 +537,34 @@ module nerv #(
 
 `endif // NERV_CSR
 
+	wire [31:0] irq_en;
+	reg [4:0] irq_num;
+	assign irq_en = irq & csr_mie_value;
+
+	// resolve interrupt priority
+	always @* begin
+		if (irq_en[31]) irq_num = 5'd31;
+		else if (irq_en[30]) irq_num = 5'd30;
+		else if (irq_en[29]) irq_num = 5'd29;
+		else if (irq_en[28]) irq_num = 5'd28;
+		else if (irq_en[27]) irq_num = 5'd27;
+		else if (irq_en[26]) irq_num = 5'd26;
+		else if (irq_en[25]) irq_num = 5'd25;
+		else if (irq_en[24]) irq_num = 5'd24;
+		else if (irq_en[23]) irq_num = 5'd23;
+		else if (irq_en[22]) irq_num = 5'd22;
+		else if (irq_en[21]) irq_num = 5'd21;
+		else if (irq_en[20]) irq_num = 5'd20;
+		else if (irq_en[19]) irq_num = 5'd19;
+		else if (irq_en[18]) irq_num = 5'd18;
+		else if (irq_en[17]) irq_num = 5'd17;
+		else if (irq_en[16]) irq_num = 5'd16;
+		else if (irq_en[11]) irq_num = 5'd11;
+		else if (irq_en[7]) irq_num = 5'd7;
+		else if (irq_en[3]) irq_num = 5'd3;
+		else irq_num = 5'd0;
+	end
+
 	always @* begin
 		// advance pc
 		npc = pc + 4;
@@ -891,6 +919,18 @@ module nerv #(
 			csr_mstatus_next[3] = 0; // MIE
 		end
 
+		if (csr_mstatus_value[3] && (irq_num!=0)) begin // if MIE is 1
+			csr_mepc_next = { pc[31:2], 2'b00 };
+			csr_mcause_next = 1 << 31 | irq_num;
+			//$display("%08x\n",csr_mepc_next);
+			if (csr_mtvec_value & 1)
+				npc = (csr_mtvec_value & ~3) + (irq_num << 2);
+			else
+				npc = csr_mtvec_value & ~3;
+			//$display("%08x\n",npc);
+			csr_mstatus_next[7] = 1; // MPIE to 1
+			csr_mstatus_next[3] = 0; // MIE to 0
+		end
 		// illegal
 		if (illinsn) begin // TODO
 			//next_wr = 0;
