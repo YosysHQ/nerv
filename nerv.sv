@@ -911,20 +911,18 @@ module nerv #(
 			csr_mstatus_next[3] = 0; // MIE
 		end
 
-		if (csr_mstatus_value[3] && (irq_num!=0)) begin // if MIE is 1
+		if (!mem_rd_enable_q && csr_mstatus_value[3] && (irq_num!=0) && !stall) begin // if MIE is 1
 			csr_mepc_next = { pc[31:2], 2'b00 };
 			csr_mcause_next = 1 << 31 | irq_num;
-			//$display("%08x\n",csr_mepc_next);
 			if (csr_mtvec_value & 1)
 				npc = (csr_mtvec_value & ~3) + (irq_num << 2);
 			else
 				npc = csr_mtvec_value & ~3;
-			//$display("%08x\n",npc);
 			csr_mstatus_next[7] = 1; // MPIE to 1
 			csr_mstatus_next[3] = 0; // MIE to 0
 		end
 		// illegal
-		if (illinsn && !stall) begin // TODO
+		if (illinsn && !stall) begin
 			csr_mepc_next[31:2] = pc[31:2];
 			npc = csr_mtvec_value & ~3;
 			csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;

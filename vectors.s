@@ -20,13 +20,15 @@ vector_table:
 	j sw_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
+	j software_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
+	j timer_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
-	j __no_irq_handler
+	j external_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
@@ -139,6 +141,22 @@ end_handler:
 verification_irq_handler:
 	mret
 
+software_irq_handler:
+	la a0, software_irq_msg
+	jal ra, puts
+	mret
+
+timer_irq_handler:
+	la a0, timer_irq_msg
+	jal ra, puts
+	mret
+
+external_irq_handler:
+	la a0, external_irq_msg
+	jal ra, puts
+	mret
+
+
 .section .rodata
 illegal_insn_msg:
 	.string "illegal instruction exception handler entered\n"
@@ -150,3 +168,9 @@ unknown_msg:
 	.string "unknown exception handler entered\n"
 no_exception_handler_msg:
 	.string "no exception handler installed\n"
+software_irq_msg:
+	.string "software irq handler entered\n"
+timer_irq_msg:
+	.string "timer irq handler entered\n"
+external_irq_msg:
+	.string "external irq handler entered\n"
