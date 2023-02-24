@@ -852,8 +852,6 @@ module nerv #(
 						case ({insn_funct7, insn_rs2})
 							12'b 0000000_00000 /* ECALL */:
 								begin
-									next_wr = 0;
-									next_rd = 0;
 									csr_mepc_next = { pc[31:2], 2'b00 };
 									npc = csr_mtvec_value & ~3;
 									csr_mcause_next = MCAUSE_ECALL_M_MODE;
@@ -862,8 +860,6 @@ module nerv #(
 								end
 							12'b 0000000_00001 /* EBREAK */:
 								begin
-									next_wr = 0;
-									next_rd = 0;
 									csr_mepc_next = { pc[31:2], 2'b00 };
 									npc = csr_mtvec_value & ~3;
 									csr_mcause_next = MCAUSE_BREAKPOINT;
@@ -872,8 +868,6 @@ module nerv #(
 								end
 							12'b 0011000_00010 /* MRET */: 
 								begin
-									next_wr = 0;
-									next_rd = 0;
 									npc = csr_mepc_value;
 									csr_mcause_next = 'b0;
 									csr_mstatus_next[3] = csr_mstatus_value[7];  // restore MIE from MPIE
