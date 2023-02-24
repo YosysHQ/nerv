@@ -924,14 +924,12 @@ module nerv #(
 			csr_mstatus_next[3] = 0; // MIE to 0
 		end
 		// illegal
-		if (illinsn) begin // TODO
-			//next_wr = 0;
-			//next_rd = 0;
-			//csr_mepc_next[31:2] = pc[31:2];
-			//npc = csr_mtvec_value & ~3;
-			//csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
-			//csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
-			//csr_mstatus_next[3] = 0; // MIE to 0
+		if (illinsn && !stall) begin // TODO
+			csr_mepc_next[31:2] = pc[31:2];
+			npc = csr_mtvec_value & ~3;
+			csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
+			csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+			csr_mstatus_next[3] = 0; // MIE to 0
 		end
 
 	end
