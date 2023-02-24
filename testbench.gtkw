@@ -140,7 +140,12 @@ testbench.dut.csr_mstatus_value[31:0]
 @22
 testbench.dut.csr_mtvec_value[31:0]
 testbench.dut.csr_mcause_value[31:0]
-@23
 testbench.dut.csr_mepc_value[31:0]
+@201
+-Interrupts
+@22
+testbench.dut.irq[31:0]
+testbench.dut.irq_en[31:0]
+testbench.dut.irq_num[4:0]
 [pattern_trace] 1
 [pattern_trace] 0
