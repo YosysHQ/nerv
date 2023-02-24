@@ -349,7 +349,7 @@ module nerv #(
 	output [ 3:0] dmem_wstrb,
 	output [31:0] dmem_wdata,
 	input  [31:0] dmem_rdata,
-    // interrupt inputs
+	// interrupt inputs
 	input  [31:0] irq
 );
 	reg mem_wr_enable;
@@ -473,15 +473,15 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
-    localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 32'h80000003;
+	localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 32'h80000003;
 	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 32'h80000007;
 	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 32'h8000000b;
-    
+	
 	localparam MCAUSE_ADDRESS_MISALIGNED     = 32'h00000000;
 	localparam MCAUSE_ACCESS_FAULT           = 32'h00000001;
 	localparam MCAUSE_INVALID_INSTRUCTION    = 32'h00000002;
-    localparam MCAUSE_BREAKPOINT             = 32'h00000003;
-    localparam MCAUSE_ECALL_M_MODE           = 32'h0000000b;
+	localparam MCAUSE_BREAKPOINT             = 32'h00000003;
+	localparam MCAUSE_ECALL_M_MODE           = 32'h0000000b;
 
 	localparam IRQ_MASK = 32'hFFFF0888;
 
