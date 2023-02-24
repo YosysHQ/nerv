@@ -17,80 +17,38 @@
 .section .vectors, "ax"
 .option norvc
 vector_table:
-	j sw_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j software_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j timer_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j external_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j verification_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-	j __no_irq_handler
-
-/* this is fixed to 0x8000, used for PULP_SECURE=0. We redirect this entry to the
-new vector table (which is at mtvec) */
-/* .section .legacy_irq, "ax" */
-/*	j vector_table */
-/*	j __no_irq_handler */
-/*	j __no_irq_handler */
-/*	j __no_irq_handler */
+	j sw_irq_handler         /* 0 */
+	j __no_irq_handler       /* 1 */
+	j __no_irq_handler       /* 2 */
+	j software_irq_handler   /* 3 */
+	j __no_irq_handler       /* 4 */
+	j __no_irq_handler       /* 5 */
+	j __no_irq_handler       /* 6 */
+	j timer_irq_handler      /* 7 */
+	j __no_irq_handler       /* 8 */
+	j __no_irq_handler       /* 9 */
+	j __no_irq_handler       /* 10 */
+	j external_irq_handler   /* 11 */
+	j __no_irq_handler       /* 12 */
+	j __no_irq_handler       /* 13 */
+	j __no_irq_handler       /* 14 */
+	j __no_irq_handler       /* 15 */
+	j __no_irq_handler       /* 16 */
+	j __no_irq_handler       /* 17 */
+	j __no_irq_handler       /* 18 */
+	j __no_irq_handler       /* 19 */
+	j __no_irq_handler       /* 20 */
+	j __no_irq_handler       /* 21 */
+	j __no_irq_handler       /* 22 */
+	j __no_irq_handler       /* 23 */
+	j __no_irq_handler       /* 24 */
+	j __no_irq_handler       /* 25 */
+	j __no_irq_handler       /* 26 */
+	j __no_irq_handler       /* 27 */
+	j __no_irq_handler       /* 28 */
+	j __no_irq_handler       /* 29 */
+	j __no_irq_handler       /* 30 */
+	j __no_irq_handler       /* 31 */
 
 .section .text.vecs
 /* exception handling */
