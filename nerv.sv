@@ -901,17 +901,8 @@ module nerv #(
 			mem_wr_enable = 0;
 		end
 
-		// reset
-		if (reset || reset_q) begin
-			npc = RESET_ADDR;
-			next_wr = 0;
-			illinsn = 0;
-			mem_rd_enable = 0;
-			mem_wr_enable = 0;
-			csr_mstatus_next[3] = 0; // MIE
-		end
-
 		if (!mem_rd_enable_q && csr_mstatus_value[3] && (irq_num!=0) && !stall) begin // if MIE is 1
+			illinsn = 0;
 			csr_mepc_next = { pc[31:2], 2'b00 };
 			csr_mcause_next = 1 << 31 | irq_num;
 			if (csr_mtvec_value & 1)
@@ -929,7 +920,15 @@ module nerv #(
 			csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
 			csr_mstatus_next[3] = 0; // MIE to 0
 		end
-
+		// reset
+		if (reset || reset_q) begin
+			npc = RESET_ADDR;
+			next_wr = 0;
+			illinsn = 0;
+			mem_rd_enable = 0;
+			mem_wr_enable = 0;
+			csr_mstatus_next[3] = 0; // MIE
+		end
 	end
 
 	reg [31:0] mem_rdata;
