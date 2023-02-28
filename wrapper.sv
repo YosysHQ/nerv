@@ -34,6 +34,7 @@ module rvfi_wrapper (
 	(* keep *) wire [31:0] dmem_addr;
 	(* keep *) wire [ 3:0] dmem_wstrb;
 	(* keep *) wire [31:0] dmem_wdata;
+	(* keep *) reg [31:0] irq = 0;
 
 	nerv uut (
 		.clock      (clock    ),
@@ -49,6 +50,7 @@ module rvfi_wrapper (
 		.dmem_wstrb (dmem_wstrb),
 		.dmem_wdata (dmem_wdata),
 		.dmem_rdata (dmem_rdata),
+		.irq (irq),
 
 		`RVFI_CONN32
 	);
