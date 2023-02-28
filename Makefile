@@ -20,7 +20,7 @@ TOOLCHAIN_PREFIX?=riscv64-unknown-elf-
 test: firmware.hex testbench
 	vvp -N testbench +vcd
 
-firmware.elf: firmware.s firmware.c
+firmware.elf: firmware.s vectors.s firmware.c
 	$(TOOLCHAIN_PREFIX)gcc -march=rv32i -mabi=ilp32 -Os -Wall -Wextra -Wl,-Bstatic,-T,sections.lds,--strip-debug -ffreestanding -nostdlib -o $@ $^
 
 firmware.hex: firmware.elf

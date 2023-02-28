@@ -348,7 +348,9 @@ module nerv #(
 	output [31:0] dmem_addr,
 	output [ 3:0] dmem_wstrb,
 	output [31:0] dmem_wdata,
-	input  [31:0] dmem_rdata
+	input  [31:0] dmem_rdata,
+	// interrupt inputs
+	input  [31:0] irq
 );
 	reg mem_wr_enable;
 	reg [31:0] mem_wr_addr;
@@ -471,6 +473,18 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
+	localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 32'h80000003;
+	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 32'h80000007;
+	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 32'h8000000b;
+	
+	localparam MCAUSE_ADDRESS_MISALIGNED     = 32'h00000000;
+	localparam MCAUSE_ACCESS_FAULT           = 32'h00000001;
+	localparam MCAUSE_INVALID_INSTRUCTION    = 32'h00000002;
+	localparam MCAUSE_BREAKPOINT             = 32'h00000003;
+	localparam MCAUSE_ECALL_M_MODE           = 32'h0000000b;
+
+	localparam IRQ_MASK = 32'hFFFF0888;
+
 	// next write, next destination (rd), illegal instruction registers
 	reg next_wr;
 	reg [31:0] next_rd;
@@ -522,6 +536,34 @@ module nerv #(
 `undef NERV_CSR_VAL_MRO
 
 `endif // NERV_CSR
+
+	wire [31:0] irq_en;
+	reg [4:0] irq_num;
+	assign irq_en = irq & csr_mie_value;
+
+	// resolve interrupt priority
+	always @* begin
+		if (irq_en[31]) irq_num = 5'd31;
+		else if (irq_en[30]) irq_num = 5'd30;
+		else if (irq_en[29]) irq_num = 5'd29;
+		else if (irq_en[28]) irq_num = 5'd28;
+		else if (irq_en[27]) irq_num = 5'd27;
+		else if (irq_en[26]) irq_num = 5'd26;
+		else if (irq_en[25]) irq_num = 5'd25;
+		else if (irq_en[24]) irq_num = 5'd24;
+		else if (irq_en[23]) irq_num = 5'd23;
+		else if (irq_en[22]) irq_num = 5'd22;
+		else if (irq_en[21]) irq_num = 5'd21;
+		else if (irq_en[20]) irq_num = 5'd20;
+		else if (irq_en[19]) irq_num = 5'd19;
+		else if (irq_en[18]) irq_num = 5'd18;
+		else if (irq_en[17]) irq_num = 5'd17;
+		else if (irq_en[16]) irq_num = 5'd16;
+		else if (irq_en[11]) irq_num = 5'd11;
+		else if (irq_en[7]) irq_num = 5'd7;
+		else if (irq_en[3]) irq_num = 5'd3;
+		else irq_num = 5'd0;
+	end
 
 	always @* begin
 		// advance pc
@@ -635,41 +677,46 @@ module nerv #(
 	// mie - Machine Interrupt-Enable
 	// A bit in mie must be writable if the corresponding interrupt can ever become pending.
 	// Bits of mie that are not writable must be read-only 0.
-	csr_mie_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
+	//csr_mie_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
 	csr_mie_next[15:12] = 'b0; // 0
-	csr_mie_next[11] = 'b0; // MEIE - Machine-level External Interrupt Enable
+	//csr_mie_next[11] = 'b0; // MEIE - Machine-level External Interrupt Enable
 	csr_mie_next[10] = 'b0; // 0
 	csr_mie_next[9] = 'b0; // SEIE = 0 if no S
 	csr_mie_next[8] = 'b0; // 0 
-	csr_mie_next[7] = 'b0; // MTIE - Machine Timer Interrupt Enable
+	//csr_mie_next[7] = 'b0; // MTIE - Machine Timer Interrupt Enable
 	csr_mie_next[6] = 'b0; // 0
 	csr_mie_next[5] = 'b0; // STIE = 0 if no S
 	csr_mie_next[4] = 'b0; // 0
-	csr_mie_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Enable
+	//csr_mie_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Enable
 	csr_mie_next[2] = 'b0; // 0
 	csr_mie_next[1] = 'b0; // SSIE = 0 if no S
 	csr_mie_next[0] = 'b0; // 0
 
 	// mip - Machine Interrupt-Pending
-	csr_mip_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
-	csr_mip_next[15:12] = 'b0; // 0
-	csr_mip_next[11] = 'b0; // MEIE - Machine-level External Interrupt Pending
-	csr_mip_next[10] = 'b0; // 0
-	csr_mip_next[9] = 'b0; // SEIE = 0 if no S
-	csr_mip_next[8] = 'b0; // 0 
-	csr_mip_next[7] = 'b0; // MTIE - Machine Timer Interrupt Pending
-	csr_mip_next[6] = 'b0; // 0
-	csr_mip_next[5] = 'b0; // STIE = 0 if no S
-	csr_mip_next[4] = 'b0; // 0
-	csr_mip_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Pending
-	csr_mip_next[2] = 'b0; // 0
-	csr_mip_next[1] = 'b0; // SSIE = 0 if no S
-	csr_mip_next[0] = 'b0; // 0
+	//csr_mip_next[31:16] = 'b0; // bits 16 and above for custom/platform interrupts
+	//csr_mip_next[15:12] = 'b0; // 0
+	//csr_mip_next[11] = 'b0; // MEIE - Machine-level External Interrupt Pending
+	//csr_mip_next[10] = 'b0; // 0
+	//csr_mip_next[9] = 'b0; // SEIE = 0 if no S
+	//csr_mip_next[8] = 'b0; // 0 
+	//csr_mip_next[7] = 'b0; // MTIE - Machine Timer Interrupt Pending
+	//csr_mip_next[6] = 'b0; // 0
+	//csr_mip_next[5] = 'b0; // STIE = 0 if no S
+	//csr_mip_next[4] = 'b0; // 0
+	//csr_mip_next[3] = 'b0; // MSIE - Machine-level Software Interrupt Pending
+	//csr_mip_next[2] = 'b0; // 0
+	//csr_mip_next[1] = 'b0; // SSIE = 0 if no S
+	//csr_mip_next[0] = 'b0; // 0
+	csr_mip_next = irq & IRQ_MASK;
 
 	// mtvec - Machine Trap-Vector Base-Address
-	/* FIXME */
-	csr_mtvec_next[31:2] = 'b0; // BASE - vector base address
-	csr_mtvec_next[1:0] = 'b0; // MODE - vector mode
+	csr_mtvec_next[1] = 'b0; // MODE - keep high bit always 0
+
+	// mcause - keep these bits at 0
+	csr_mcause_next[30:5] ='b0;
+	
+	// mepc - keep alignment
+	csr_mepc_next[1:0] = 'b0;
 
 `endif // NERV_CSR
 
@@ -800,11 +847,46 @@ module nerv #(
 			end
 `ifdef NERV_CSR
 			OPCODE_SYSTEM: begin
-				if (csr_ack) begin
-					next_wr = 1;
-					next_rd = csr_rdval;
-				end else
-					illinsn = 1;
+				case (insn_funct3)
+					3'b 000 : begin 
+						case ({insn_funct7, insn_rs2})
+							12'b 0000000_00000 /* ECALL */:
+								begin
+									csr_mepc_next = { pc[31:2], 2'b00 };
+									npc = csr_mtvec_value & ~3;
+									csr_mcause_next = MCAUSE_ECALL_M_MODE;
+									csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+									csr_mstatus_next[3] = 0; // MIE to 0
+								end
+							12'b 0000000_00001 /* EBREAK */:
+								begin
+									csr_mepc_next = { pc[31:2], 2'b00 };
+									npc = csr_mtvec_value & ~3;
+									csr_mcause_next = MCAUSE_BREAKPOINT;
+									csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+									csr_mstatus_next[3] = 0; // MIE to 0
+								end
+							12'b 0011000_00010 /* MRET */: 
+								begin
+									npc = csr_mepc_value;
+									csr_mcause_next = 'b0;
+									csr_mstatus_next[3] = csr_mstatus_value[7];  // restore MIE from MPIE
+								end
+							12'b 0001000_00101 /* WFI */:
+								begin 
+									// implemented as NOP
+								end
+							default: illinsn = 1;
+						endcase
+					end
+					default : begin 
+						if (csr_ack) begin
+							next_wr = 1;
+							next_rd = csr_rdval;
+						end else
+							illinsn = 1;
+					end
+				endcase
 			end
 `endif
 			default: illinsn = 1;
@@ -819,6 +901,25 @@ module nerv #(
 			mem_wr_enable = 0;
 		end
 
+		if (!mem_rd_enable_q && csr_mstatus_value[3] && (irq_num!=0) && !stall) begin // if MIE is 1
+			illinsn = 0;
+			csr_mepc_next = { pc[31:2], 2'b00 };
+			csr_mcause_next = 1 << 31 | irq_num;
+			if (csr_mtvec_value & 1)
+				npc = (csr_mtvec_value & ~3) + (irq_num << 2);
+			else
+				npc = csr_mtvec_value & ~3;
+			csr_mstatus_next[7] = 1; // MPIE to 1
+			csr_mstatus_next[3] = 0; // MIE to 0
+		end
+		// illegal
+		if (illinsn && !stall) begin
+			csr_mepc_next[31:2] = pc[31:2];
+			npc = csr_mtvec_value & ~3;
+			csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
+			csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
+			csr_mstatus_next[3] = 0; // MIE to 0
+		end
 		// reset
 		if (reset || reset_q) begin
 			npc = RESET_ADDR;
@@ -826,6 +927,7 @@ module nerv #(
 			illinsn = 0;
 			mem_rd_enable = 0;
 			mem_wr_enable = 0;
+			csr_mstatus_next[3] = 0; // MIE
 		end
 	end
 

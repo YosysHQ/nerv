@@ -68,7 +68,7 @@ testbench.dut.rs2_value[31:0]
 testbench.dut.next_wr
 @22
 testbench.dut.next_rd[31:0]
-@c00201
+@c00200
 -registers
 @22
 testbench.dut.dbg_reg_x0[31:0]
@@ -103,7 +103,7 @@ testbench.dut.dbg_reg_x28[31:0]
 testbench.dut.dbg_reg_x29[31:0]
 testbench.dut.dbg_reg_x30[31:0]
 testbench.dut.dbg_reg_x31[31:0]
-@1401201
+@1401200
 -registers
 @200
 -
@@ -137,5 +137,15 @@ testbench.dut.csr_mcycle_value[31:0]
 testbench.dut.csr_minstret_value[31:0]
 @28
 testbench.dut.csr_mstatus_value[31:0]
+@22
+testbench.dut.csr_mtvec_value[31:0]
+testbench.dut.csr_mcause_value[31:0]
+testbench.dut.csr_mepc_value[31:0]
+@201
+-Interrupts
+@22
+testbench.dut.irq[31:0]
+testbench.dut.irq_en[31:0]
+testbench.dut.irq_num[4:0]
 [pattern_trace] 1
 [pattern_trace] 0
