@@ -25,7 +25,7 @@ module rvfi_wrapper (
 	(* keep *) `rvformal_rand_reg stall;
 	(* keep *) `rvformal_rand_reg [31:0] imem_data;
 	(* keep *) `rvformal_rand_reg [31:0] dmem_rdata;
-	(* keep *) `rvformal_rand_reg nmi;
+	(* keep *) `rvformal_rand_reg [31:0] irq;
 
 	(* keep *) wire trap;
 
@@ -41,7 +41,6 @@ module rvfi_wrapper (
 		.reset      (reset    ),
 		.stall      (stall    ),
 		.trap       (trap     ),
-		.nmi        (nmi      ),
 
 		.imem_addr  (imem_addr ),
 		.imem_data  (imem_data ),
@@ -51,6 +50,7 @@ module rvfi_wrapper (
 		.dmem_wstrb (dmem_wstrb),
 		.dmem_wdata (dmem_wdata),
 		.dmem_rdata (dmem_rdata),
+		.irq (irq),
 
 		`RVFI_CONN32
 	);
