@@ -256,11 +256,14 @@
 
 module nerv #(
 	parameter [31:0] RESET_ADDR = 32'h 0000_0000,
+	parameter [31:0] NMI_ADDR = 32'h 0000_0004,
+	parameter [31:0] TRAP_ADDR = 32'h 0000_0008,
 	parameter integer NUMREGS = 32
 ) (
 	input clock,
 	input reset,
 	input stall,
+	input nmi,
 	output trap,
 
 `ifdef NERV_RVFI
@@ -364,7 +367,7 @@ module nerv #(
 	end
 
 	// instruction memory pointer
-	assign imem_addr = (stall || trap || mem_rd_enable_q) ? imem_addr_q : npc;
+	assign imem_addr = npc;
 	assign insn = imem_data;
 
 	// components of the instruction
@@ -440,17 +443,27 @@ module nerv #(
 	localparam OPCODE_CUSTOM_2   = 7'b 10_110_11;
 	localparam OPCODE_CUSTOM_3   = 7'b 11_110_11;
 
-	// next write, next destination (rd), illegal instruction registers
+	// next write, next destination (rd) value & register
 	reg next_wr;
 	reg [31:0] next_rd;
+	reg [4:0] wr_rd;
+
+	// illegal instruction registers
 	reg illinsn;
 
-	reg trapped;
-	reg trapped_q;
-	assign trap = trapped;
-
 	reg reset_q;
-	wire running = !trapped && !stall && !reset && !reset_q;
+	wire running = !stall && !reset && !reset_q;
+
+	// action to perform this cycle
+	reg cycle_intr; // cycle to start fetching new PC for interrupts
+	reg cycle_insn; // first non-trapping cycle of an instruction
+	reg cycle_trap; // trap in the first cycle of an instruction
+	reg cycle_late_wr; // 2nd cycle for mem_rd_enable instructions
+
+	assign trap = cycle_trap;
+
+	reg nmi_pending;
+	reg nmi_pending_q;
 
 `ifdef NERV_CSR
 	/*********************
@@ -499,7 +512,14 @@ module nerv #(
 		// defaults for read, write
 		next_wr = 0;
 		next_rd = 0;
+		cycle_intr = 0;
+		cycle_trap = 0;
+		cycle_insn = 0;
+		cycle_late_wr = 0;
+		wr_rd = insn_rd;
+
 		illinsn = 0;
+		nmi_pending = nmi_pending_q;
 
 		mem_wr_enable = 0;
 		mem_wr_addr = 32'hx;
@@ -705,20 +725,39 @@ module nerv #(
 			default: illinsn = 1;
 		endcase
 
-		// if last cycle was a memory read, then this cycle is the 2nd part of it and imem_data will not be a valid instruction
-		if (mem_rd_enable_q) begin
+		// check the nmi input every cycle
+		if (nmi)
+			nmi_pending = 1;
+
+		if (reset || reset_q) begin
+			// reset has the highest priority
+			npc = RESET_ADDR;
+			nmi_pending = 0;
+		end else if (stall) begin
+			// if this is a stall cycle, don't perform any action
 			npc = pc;
-			next_wr = 0;
-			illinsn = 0;
-			mem_rd_enable = 0;
-			mem_wr_enable = 0;
+		end else if (mem_rd_enable_q) begin
+			// if last cycle was a memory read, then this cycle is the 2nd part of it and imem_data will not be a valid instruction
+			npc = pc;
+			cycle_late_wr = 1;
+			wr_rd = mem_rd_reg_q;
+			next_rd = mem_rdata;
+		end else if (nmi_pending) begin
+			// if an NMI is pending, take the interrupt
+			cycle_intr = 1;
+			nmi_pending = 0;
+			npc = NMI_ADDR;
+		end else if (illinsn) begin
+			// if the instruction is invalid, take a trap
+			cycle_trap = 1;
+			npc = TRAP_ADDR;
+		end else begin
+			// the instruction is valid and nothing else has priority
+			cycle_insn = 1;
 		end
 
-		// reset
-		if (reset || reset_q) begin
-			npc = RESET_ADDR;
-			next_wr = 0;
-			illinsn = 0;
+		if (!cycle_insn) begin
+			next_wr = cycle_late_wr;
 			mem_rd_enable = 0;
 			mem_wr_enable = 0;
 		end
@@ -726,9 +765,10 @@ module nerv #(
 
 	reg [31:0] mem_rdata;
 `ifdef NERV_RVFI
-	reg rvfi_pre_valid;
-	reg [ 4:0] rvfi_pre_rd_addr;
-	reg [31:0] rvfi_pre_rd_wdata;
+	reg next_rvfi_intr;
+	reg rvfi_trap_q;
+
+	wire next_rvfi_valid = (cycle_insn && !mem_rd_enable) || cycle_trap || cycle_late_wr;
 `endif
 
 	// mem read functions: Lower and Upper Bytes, signed and unsigned
@@ -745,28 +785,41 @@ module nerv #(
 	// every cycle
 	always @(posedge clock) begin
 		reset_q <= reset || (reset_q && stall);
-		trapped_q <= trapped;
+		nmi_pending_q <= nmi_pending;
 
-		// increment pc if possible
-		if (running) begin
-			if (illinsn)
-				trapped <= 1;
-			pc <= npc;
+		// update pc
+		pc <= npc;
+
+		if (next_wr)
+			regfile[wr_rd] <= next_rd;
+
 `ifdef NERV_RVFI
-			rvfi_pre_valid <= !mem_rd_enable_q;
+		rvfi_valid <= next_rvfi_valid;
+
+		if (cycle_intr)
+			next_rvfi_intr <= 1;
+
+		if (cycle_insn || cycle_late_wr) begin
+			rvfi_rd_addr <= next_wr ? wr_rd : 0;
+			rvfi_rd_wdata <= next_wr && wr_rd ? next_rd : 0;
+			rvfi_mem_rdata <= dmem_rdata;
+		end
+
+		if (cycle_insn || cycle_trap) begin
+			next_rvfi_intr <= rvfi_trap;
+
 			rvfi_order <= rvfi_order + 1;
+			rvfi_valid <= !mem_rd_enable;
 			rvfi_insn <= insn;
-			rvfi_trap <= illinsn;
-			rvfi_halt <= illinsn;
-			rvfi_intr <= 0;
+			rvfi_trap <= cycle_trap;
+			rvfi_halt <= 0;
+			rvfi_intr <= next_rvfi_intr;
 			rvfi_mode <= 3;
 			rvfi_ixl <= 1;
 			rvfi_rs1_addr <= insn_rs1;
 			rvfi_rs2_addr <= insn_rs2;
 			rvfi_rs1_rdata <= rs1_value;
 			rvfi_rs2_rdata <= rs2_value;
-			rvfi_pre_rd_addr <= next_wr ? insn_rd : 0;
-			rvfi_pre_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
 			rvfi_pc_rdata <= pc;
 			rvfi_pc_wdata <= npc;
 			if (dmem_valid) begin
@@ -787,6 +840,9 @@ module nerv #(
 				rvfi_mem_wmask <= 0;
 				rvfi_mem_wdata <= 0;
 			end
+		end
+
+		if (next_rvfi_valid) begin
 `ifdef NERV_CSR
 `define NERV_CSR_REG_MRW(NAME, ADDR, VALUE) \
 			rvfi_csr_``NAME``_rmask <= 32'h ffff_ffff;	\
@@ -808,36 +864,21 @@ module nerv #(
 `undef NERV_CSR_VAL_MRW
 `undef NERV_CSR_VAL_MRO
 `endif
-`endif
-			// update registers from memory or rd (destination)
-			if (mem_rd_enable_q || next_wr)
-				regfile[mem_rd_enable_q ? mem_rd_reg_q : insn_rd] <= mem_rd_enable_q ? mem_rdata : next_rd;
 		end
+`endif
 
 		// reset
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
-			trapped <= 0;
 `ifdef NERV_RVFI
-			rvfi_pre_valid <= 0;
+			next_rvfi_intr <= 0;
+			rvfi_valid <= 0;
 			rvfi_order <= 0;
+			rvfi_trap <= 0;
 `endif
 		end
 	end
 
-`ifdef NERV_RVFI
-	always @* begin
-		if (mem_rd_enable_q) begin
-			rvfi_rd_addr = mem_rd_reg_q;
-			rvfi_rd_wdata = mem_rd_reg_q ? mem_rdata : 0;
-		end else begin
-			rvfi_rd_addr = rvfi_pre_rd_addr;
-			rvfi_rd_wdata = rvfi_pre_rd_wdata;
-		end
-		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q && !trapped_q;
-		rvfi_mem_rdata = dmem_rdata;
-	end
-`endif
 
 `ifdef NERV_DBGREGS
 	wire [31:0] dbg_reg_x0  = 0;

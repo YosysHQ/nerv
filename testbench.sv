@@ -120,6 +120,7 @@ nerv dut (
 	.reset(reset),
 	.stall(stall),
 	.trap(trap),
+	.nmi(1'b0),
 
 	.imem_addr(imem_addr),
 	.imem_data(stall ? 32'bx : imem_data),
