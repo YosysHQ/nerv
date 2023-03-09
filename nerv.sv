@@ -512,7 +512,7 @@ module nerv #(
 	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !csr_rsval);
 
 `define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)				\
-	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR;		\
+	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR && !mem_rd_enable_q;		\
 	reg [31:0] csr_``NAME``_value;					\
 	reg [31:0] csr_``NAME``_wdata;					\
 	reg [31:0] csr_``NAME``_next;					\
@@ -523,11 +523,11 @@ module nerv #(
 	end
 
 `define NERV_CSR_VAL_MRW(NAME, ADDR, VALUE)				\
-	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR;		\
+	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR && !mem_rd_enable_q;		\
 	localparam [31:0] csr_``NAME``_value = VALUE;
 
 `define NERV_CSR_VAL_MRO(NAME, ADDR, VALUE)				\
-	wire csr_``NAME``_sel = csr_ro && csr_addr == ADDR;		\
+	wire csr_``NAME``_sel = csr_ro && csr_addr == ADDR && !mem_rd_enable_q;		\
 	localparam [31:0] csr_``NAME``_value = VALUE;
 
 `NERV_CSRS

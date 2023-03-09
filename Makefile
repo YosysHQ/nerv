@@ -41,6 +41,9 @@ check: checks
 show:
 	gtkwave testbench.vcd testbench.gtkw >> gtkwave.log 2>&1 &
 
+trace:
+	gtkwave cexdata/checks_$(TRACE_CHECK)_ch0.vcd trace.gtkw >> gtkwave.log 2>&1 &
+
 clean:
 	rm -rf firmware.elf firmware.hex testbench testbench.vcd gtkwave.log
 	rm -rf disasm.o disasm.s checks/ cexdata/
