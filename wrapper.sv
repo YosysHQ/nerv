@@ -28,6 +28,14 @@ module rvfi_wrapper (
 	(* keep *) `rvformal_rand_reg [31:0] dmem_rdata;
 	(* keep *) `rvformal_rand_reg [31:0] irq;
 
+`ifdef NERV_FAULT
+	(* keep *) `rvformal_rand_reg imem_fault;
+	(* keep *) `rvformal_rand_reg dmem_fault;
+`else
+	wire imem_fault = 0;
+	wire dmem_fault = 0;
+`endif
+
 	(* keep *) wire trap;
 
 	(* keep *) wire [31:0] imem_addr;
@@ -51,6 +59,12 @@ module rvfi_wrapper (
 		.dmem_wstrb (dmem_wstrb),
 		.dmem_wdata (dmem_wdata),
 		.dmem_rdata (dmem_rdata),
+
+`ifdef NERV_FAULT
+		.imem_fault (imem_fault),
+		.dmem_fault (dmem_fault),
+`endif
+
 		.irq (irq),
 
 		`RVFI_CONN32
@@ -84,6 +98,7 @@ module rvfi_wrapper (
 		imem_bus_wmask = 4'b0000;
 		imem_bus_rdata = imem_data;
 		imem_bus_wdata = 0;
+		imem_bus_fault = imem_fault;
 		imem_bus_valid = !stall;
 	end;
 
@@ -96,15 +111,27 @@ module rvfi_wrapper (
 	(* keep *) `rvformal_rand_reg [31:0] next_dmem_rdata;
 	reg [31:0] next_dmem_rdata_q;
 
+`ifdef NERV_FAULT
+	(* keep *) `rvformal_rand_reg [31:0] next_dmem_fault;
+	reg [31:0] next_dmem_fault_q;
+`endif
+
 	always @(posedge clock) begin
-		if (!stall)
+		if (!stall) begin
 			next_dmem_rdata_q <= next_dmem_rdata;
+`ifdef NERV_FAULT
+			next_dmem_fault_q <= next_dmem_fault;
+`endif
+		end
 	end
 
 	always @* begin
-		if (!stall)
+		if (!stall) begin
 			assume (dmem_rdata == next_dmem_rdata_q);
-
+`ifdef NERV_FAULT
+			assume (dmem_fault == next_dmem_fault_q);
+`endif
+		end
 		dmem_bus_addr  = dmem_addr;
 		dmem_bus_insn  = 0;
 		dmem_bus_data  = 1;
@@ -112,6 +139,7 @@ module rvfi_wrapper (
 		dmem_bus_wmask = dmem_wstrb;
 		dmem_bus_rdata = next_dmem_rdata;
 		dmem_bus_wdata = dmem_wdata;
+		dmem_bus_fault = next_dmem_fault;
 		dmem_bus_valid = !stall && dmem_valid;
 	end;
 

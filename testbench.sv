@@ -132,6 +132,11 @@ nerv dut (
 	.dmem_wdata(dmem_wdata),
 	.dmem_rdata(stall ? 32'bx : dmem_rdata),
 
+`ifdef NERV_FAULT
+	.imem_fault(1'b0),
+	.dmem_fault(1'b0),
+`endif
+
 	.irq(irq)
 );
 
