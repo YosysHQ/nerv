@@ -17,17 +17,17 @@
  *
  */
 
-module rvfi_wrapper (
+module testbench (
 	input         clock,
-	input         reset,
 	`RVFI_OUTPUTS
 );
+	reg reset = 1;
+	always @(posedge clock)
+		reset <= 0;
+
 	(* keep *) `rvformal_rand_reg stall;
 	(* keep *) `rvformal_rand_reg [31:0] imem_data;
 	(* keep *) `rvformal_rand_reg [31:0] dmem_rdata;
-	(* keep *) `rvformal_rand_reg [31:0] irq;
-
-	(* keep *) wire trap;
 
 	(* keep *) wire [31:0] imem_addr;
 
@@ -36,11 +36,37 @@ module rvfi_wrapper (
 	(* keep *) wire [ 3:0] dmem_wstrb;
 	(* keep *) wire [31:0] dmem_wdata;
 
+	wire [31:0] check_imem_addr;
+	wire [15:0] check_imem_data;
+
+    rvfi_imem_check checker_inst (
+		.clock(clock),
+		.reset(reset),
+		.enable(1'b1),
+		.imem_addr(check_imem_addr),
+		.imem_data(check_imem_data),
+		`RVFI_CONN
+	);
+
+    reg [31:0] imem_addr_q;
+
+    always @(posedge clock) begin
+        imem_addr_q <= imem_addr;
+    end
+
+	always @* begin
+		if (!reset && !stall) begin
+			if (imem_addr_q == check_imem_addr)
+				assume(imem_data[15:0] == check_imem_data);
+			if (imem_addr_q+2 == check_imem_addr)
+				assume(imem_data[31:16] == check_imem_data);
+		end
+	end
+
 	nerv uut (
 		.clock      (clock    ),
 		.reset      (reset    ),
 		.stall      (stall    ),
-		.trap       (trap     ),
 
 		.imem_addr  (imem_addr ),
 		.imem_data  (imem_data ),
@@ -50,9 +76,8 @@ module rvfi_wrapper (
 		.dmem_wstrb (dmem_wstrb),
 		.dmem_wdata (dmem_wdata),
 		.dmem_rdata (dmem_rdata),
-		.irq (irq),
 
-		`RVFI_CONN32
+		`RVFI_CONN
 	);
 
 `ifdef NERV_FAIRNESS

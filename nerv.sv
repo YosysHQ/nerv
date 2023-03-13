@@ -397,7 +397,7 @@ module nerv #(
 	end
 
 	// instruction memory pointer
-	assign imem_addr = (stall || trap || mem_rd_enable_q) ? imem_addr_q : npc;
+	assign imem_addr = npc;
 	assign insn = imem_data;
 
 	// components of the instruction
@@ -476,7 +476,7 @@ module nerv #(
 	localparam MCAUSE_MACHINE_SOFTWARE_INTERRUPT = 32'h80000003;
 	localparam MCAUSE_MACHINE_TIMER_INTERRUPT    = 32'h80000007;
 	localparam MCAUSE_MACHINE_EXTERNAL_INTERRUPT = 32'h8000000b;
-	
+
 	localparam MCAUSE_ADDRESS_MISALIGNED     = 32'h00000000;
 	localparam MCAUSE_ACCESS_FAULT           = 32'h00000001;
 	localparam MCAUSE_INVALID_INSTRUCTION    = 32'h00000002;
@@ -485,17 +485,24 @@ module nerv #(
 
 	localparam IRQ_MASK = 32'hFFFF0888;
 
-	// next write, next destination (rd), illegal instruction registers
+	// next write, next destination (rd) value & register
 	reg next_wr;
 	reg [31:0] next_rd;
+	reg [4:0] wr_rd;
+
+	// illegal instruction registers
 	reg illinsn;
 
-	reg trapped;
-	reg trapped_q;
-	assign trap = trapped;
-
 	reg reset_q;
-	wire running = !trapped && !stall && !reset && !reset_q;
+	wire running = !stall && !reset && !reset_q;
+
+	// action to perform this cycle
+	reg cycle_intr; // cycle to start fetching new PC for interrupts
+	reg cycle_insn; // first non-trapping cycle of an instruction
+	reg cycle_trap; // trap in the first cycle of an instruction
+	reg cycle_late_wr; // 2nd cycle for mem_rd_enable instructions
+
+	assign trap = cycle_trap;
 
 `ifdef NERV_CSR
 	/*********************
@@ -572,6 +579,12 @@ module nerv #(
 		// defaults for read, write
 		next_wr = 0;
 		next_rd = 0;
+		cycle_intr = 0;
+		cycle_trap = 0;
+		cycle_insn = 0;
+		cycle_late_wr = 0;
+		wr_rd = insn_rd;
+
 		illinsn = 0;
 
 		mem_wr_enable = 0;
@@ -682,7 +695,7 @@ module nerv #(
 	//csr_mie_next[11] = 'b0; // MEIE - Machine-level External Interrupt Enable
 	csr_mie_next[10] = 'b0; // 0
 	csr_mie_next[9] = 'b0; // SEIE = 0 if no S
-	csr_mie_next[8] = 'b0; // 0 
+	csr_mie_next[8] = 'b0; // 0
 	//csr_mie_next[7] = 'b0; // MTIE - Machine Timer Interrupt Enable
 	csr_mie_next[6] = 'b0; // 0
 	csr_mie_next[5] = 'b0; // STIE = 0 if no S
@@ -698,7 +711,7 @@ module nerv #(
 	//csr_mip_next[11] = 'b0; // MEIE - Machine-level External Interrupt Pending
 	//csr_mip_next[10] = 'b0; // 0
 	//csr_mip_next[9] = 'b0; // SEIE = 0 if no S
-	//csr_mip_next[8] = 'b0; // 0 
+	//csr_mip_next[8] = 'b0; // 0
 	//csr_mip_next[7] = 'b0; // MTIE - Machine Timer Interrupt Pending
 	//csr_mip_next[6] = 'b0; // 0
 	//csr_mip_next[5] = 'b0; // STIE = 0 if no S
@@ -714,7 +727,7 @@ module nerv #(
 
 	// mcause - keep these bits at 0
 	csr_mcause_next[30:5] ='b0;
-	
+
 	// mepc - keep alignment
 	csr_mepc_next[1:0] = 'b0;
 
@@ -848,7 +861,7 @@ module nerv #(
 `ifdef NERV_CSR
 			OPCODE_SYSTEM: begin
 				case (insn_funct3)
-					3'b 000 : begin 
+					3'b 000 : begin
 						case ({insn_funct7, insn_rs2})
 							12'b 0000000_00000 /* ECALL */:
 								begin
@@ -866,20 +879,20 @@ module nerv #(
 									csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
 									csr_mstatus_next[3] = 0; // MIE to 0
 								end
-							12'b 0011000_00010 /* MRET */: 
+							12'b 0011000_00010 /* MRET */:
 								begin
 									npc = csr_mepc_value;
 									csr_mcause_next = 'b0;
 									csr_mstatus_next[3] = csr_mstatus_value[7];  // restore MIE from MPIE
 								end
 							12'b 0001000_00101 /* WFI */:
-								begin 
+								begin
 									// implemented as NOP
 								end
 							default: illinsn = 1;
 						endcase
 					end
-					default : begin 
+					default : begin
 						if (csr_ack) begin
 							next_wr = 1;
 							next_rd = csr_rdval;
@@ -892,17 +905,21 @@ module nerv #(
 			default: illinsn = 1;
 		endcase
 
-		// if last cycle was a memory read, then this cycle is the 2nd part of it and imem_data will not be a valid instruction
-		if (mem_rd_enable_q) begin
+		if (reset || reset_q) begin
+			// reset has the highest priority
+			npc = RESET_ADDR;
+			csr_mstatus_next[3] = 0; // MIE
+		end else if (stall) begin
+			// if this is a stall cycle, don't perform any action
 			npc = pc;
-			next_wr = 0;
-			illinsn = 0;
-			mem_rd_enable = 0;
-			mem_wr_enable = 0;
-		end
-
-		if (!mem_rd_enable_q && csr_mstatus_value[3] && (irq_num!=0) && !stall) begin // if MIE is 1
-			illinsn = 0;
+		end else if (mem_rd_enable_q) begin
+			// if last cycle was a memory read, then this cycle is the 2nd part of it and imem_data will not be a valid instruction
+			npc = pc;
+			cycle_late_wr = 1;
+			wr_rd = mem_rd_reg_q;
+			next_rd = mem_rdata;
+		end else if (irq_num!=0) begin
+			// if there's a pending IRQ, take it
 			csr_mepc_next = { pc[31:2], 2'b00 };
 			csr_mcause_next = 1 << 31 | irq_num;
 			if (csr_mtvec_value & 1)
@@ -911,31 +928,34 @@ module nerv #(
 				npc = csr_mtvec_value & ~3;
 			csr_mstatus_next[7] = 1; // MPIE to 1
 			csr_mstatus_next[3] = 0; // MIE to 0
-		end
-		// illegal
-		if (illinsn && !stall) begin
+
+			cycle_intr = 1;
+		end else if (illinsn) begin
+			// if the instruction is invalid, take a trap
+			cycle_trap = 1;
 			csr_mepc_next[31:2] = pc[31:2];
 			npc = csr_mtvec_value & ~3;
 			csr_mcause_next = MCAUSE_INVALID_INSTRUCTION;
 			csr_mstatus_next[7] = csr_mstatus_value[3];  // save MIE to MPIE
 			csr_mstatus_next[3] = 0; // MIE to 0
+		end else begin
+			// the instruction is valid and nothing else has priority
+			cycle_insn = 1;
 		end
-		// reset
-		if (reset || reset_q) begin
-			npc = RESET_ADDR;
-			next_wr = 0;
-			illinsn = 0;
+
+		if (!cycle_insn) begin
+			next_wr = cycle_late_wr;
 			mem_rd_enable = 0;
 			mem_wr_enable = 0;
-			csr_mstatus_next[3] = 0; // MIE
 		end
 	end
 
 	reg [31:0] mem_rdata;
 `ifdef NERV_RVFI
-	reg rvfi_pre_valid;
-	reg [ 4:0] rvfi_pre_rd_addr;
-	reg [31:0] rvfi_pre_rd_wdata;
+	reg next_rvfi_intr;
+	reg rvfi_trap_q;
+
+	wire next_rvfi_valid = (cycle_insn && !mem_rd_enable) || cycle_trap || cycle_late_wr;
 `endif
 
 	// mem read functions: Lower and Upper Bytes, signed and unsigned
@@ -951,29 +971,41 @@ module nerv #(
 
 	// every cycle
 	always @(posedge clock) begin
-		reset_q <= reset;
-		trapped_q <= trapped;
+		reset_q <= reset || (reset_q && stall);
 
-		// increment pc if possible
-		if (running) begin
-			if (illinsn)
-				trapped <= 1;
-			pc <= npc;
+		// update pc
+		pc <= npc;
+
+		if (next_wr)
+			regfile[wr_rd] <= next_rd;
+
 `ifdef NERV_RVFI
-			rvfi_pre_valid <= !mem_rd_enable_q;
+		rvfi_valid <= next_rvfi_valid;
+
+		if (cycle_intr)
+			next_rvfi_intr <= 1;
+
+		if (cycle_insn || cycle_late_wr) begin
+			rvfi_rd_addr <= next_wr ? wr_rd : 0;
+			rvfi_rd_wdata <= next_wr && wr_rd ? next_rd : 0;
+			rvfi_mem_rdata <= dmem_rdata;
+		end
+
+		if (cycle_insn || cycle_trap) begin
+			next_rvfi_intr <= rvfi_trap;
+
 			rvfi_order <= rvfi_order + 1;
+			rvfi_valid <= !mem_rd_enable;
 			rvfi_insn <= insn;
-			rvfi_trap <= illinsn;
-			rvfi_halt <= illinsn;
-			rvfi_intr <= 0;
+			rvfi_trap <= cycle_trap;
+			rvfi_halt <= 0;
+			rvfi_intr <= next_rvfi_intr;
 			rvfi_mode <= 3;
 			rvfi_ixl <= 1;
 			rvfi_rs1_addr <= insn_rs1;
 			rvfi_rs2_addr <= insn_rs2;
 			rvfi_rs1_rdata <= rs1_value;
 			rvfi_rs2_rdata <= rs2_value;
-			rvfi_pre_rd_addr <= next_wr ? insn_rd : 0;
-			rvfi_pre_rd_wdata <= next_wr && insn_rd ? next_rd : 0;
 			rvfi_pc_rdata <= pc;
 			rvfi_pc_wdata <= npc;
 			if (dmem_valid) begin
@@ -994,6 +1026,9 @@ module nerv #(
 				rvfi_mem_wmask <= 0;
 				rvfi_mem_wdata <= 0;
 			end
+		end
+
+		if (next_rvfi_valid) begin
 `ifdef NERV_CSR
 `define NERV_CSR_REG_MRW(NAME, ADDR, VALUE) \
 			rvfi_csr_``NAME``_rmask <= 32'h ffff_ffff;	\
@@ -1015,36 +1050,21 @@ module nerv #(
 `undef NERV_CSR_VAL_MRW
 `undef NERV_CSR_VAL_MRO
 `endif
-`endif
-			// update registers from memory or rd (destination)
-			if (mem_rd_enable_q || next_wr)
-				regfile[mem_rd_enable_q ? mem_rd_reg_q : insn_rd] <= mem_rd_enable_q ? mem_rdata : next_rd;
 		end
+`endif
 
 		// reset
 		if (reset || reset_q) begin
 			pc <= RESET_ADDR - (reset ? 4 : 0);
-			trapped <= 0;
 `ifdef NERV_RVFI
-			rvfi_pre_valid <= 0;
+			next_rvfi_intr <= 0;
+			rvfi_valid <= 0;
 			rvfi_order <= 0;
+			rvfi_trap <= 0;
 `endif
 		end
 	end
 
-`ifdef NERV_RVFI
-	always @* begin
-		if (mem_rd_enable_q) begin
-			rvfi_rd_addr = mem_rd_reg_q;
-			rvfi_rd_wdata = mem_rd_reg_q ? mem_rdata : 0;
-		end else begin
-			rvfi_rd_addr = rvfi_pre_rd_addr;
-			rvfi_rd_wdata = rvfi_pre_rd_wdata;
-		end
-		rvfi_valid = rvfi_pre_valid && !stall && !reset && !reset_q && !trapped_q;
-		rvfi_mem_rdata = dmem_rdata;
-	end
-`endif
 
 `ifdef NERV_DBGREGS
 	wire [31:0] dbg_reg_x0  = 0;
