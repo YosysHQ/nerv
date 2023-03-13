@@ -134,6 +134,7 @@ rvfi_testbench.checker_inst.check
 rvfi_testbench.checker_inst.csr_write_valid
 rvfi_testbench.checker_inst.csr_read_valid
 rvfi_testbench.checker_inst.csr_written
+rvfi_testbench.checker_inst.csr_read_shadowed
 rvfi_testbench.checker_inst.csr_mode_shadow
 @22
 rvfi_testbench.checker_inst.csr_mode[1:0]
@@ -144,6 +145,7 @@ rvfi_testbench.checker_inst.csr_insn_wdata[31:0]
 rvfi_testbench.checker_inst.csr_insn_wmask[31:0]
 rvfi_testbench.checker_inst.rsval_shadow[31:0]
 rvfi_testbench.checker_inst.wdata_shadow[31:0]
+rvfi_testbench.checker_inst.rdata_shadow[31:0]
 rvfi_testbench.checker_inst.csr_mode_shadow[1:0]
 @1401200
 -csr
