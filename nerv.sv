@@ -544,10 +544,10 @@ module nerv #(
 	reg [31:0] csr_rdval;
 	reg [31:0] csr_next;
 
-	wire [ 1:0] csr_mode = (running && insn_opcode == OPCODE_SYSTEM) ? insn_funct3[1:0] : 2'b 00; // 00=None, 01=RW, 10=RS, 11=RC
+	wire [ 1:0] csr_mode = (running && !imem_fault && insn_opcode == OPCODE_SYSTEM) ? insn_funct3[1:0] : 2'b 00; // 00=None, 01=RW, 10=RS, 11=RC
 	wire [11:0] csr_addr = imm_i;
 	wire [31:0] csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
-	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !csr_rsval);
+	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !insn_rs1);
 
 `define NERV_CSR_REG_MRW(NAME, ADDR, VALUE)				\
 	wire csr_``NAME``_sel = csr_mode && csr_addr == ADDR;		\
@@ -1047,14 +1047,14 @@ module nerv #(
 		if (cycle_intr)
 			next_rvfi_intr <= 1;
 
-		if (cycle_insn || cycle_late_wr) begin
+		if (cycle_insn || cycle_late_wr || cycle_trap) begin
 			rvfi_rd_addr <= next_wr ? wr_rd : 0;
 			rvfi_rd_wdata <= next_wr && wr_rd ? next_rd : 0;
 			rvfi_mem_rdata <= dmem_rdata;
 		end
 
 		if (cycle_insn || cycle_trap) begin
-			next_rvfi_intr <= rvfi_trap;
+			next_rvfi_intr <= cycle_trap;
 			rvfi_order <= rvfi_order + 1;
 			rvfi_insn <= imem_fault ? 32'b0 : insn;
 			rvfi_trap <= cycle_trap;
