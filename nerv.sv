@@ -274,6 +274,10 @@
 	`NERV_CSR_VAL_MRO(mhpmevent30,       12'h 33E, 32'h 0000_0000)			\
 	`NERV_CSR_VAL_MRO(mhpmevent31,       12'h 33F, 32'h 0000_0000)
 
+`define NERV_CUSTOM_CSRS /* Custom CSR for testing */					\
+	`NERV_CSR_REG_MRW(custom,            12'h BC0, 32'h 0000_0000)			\
+	`NERV_CSR_VAL_MRO(custom_ro,         12'h FC0, 32'h dead_beef)
+
 `define NERV_CSRS			\
 	`NERV_MACHINE_CSRS		\
 	`NERV_TRAP_SETUP_CSRS		\
@@ -282,7 +286,8 @@
 	`NERV_PMP_CFG_CSRS		\
 	`NERV_PMP_ADDR_CSRS		\
 	`NERV_COUNTER_CSRS		\
-	`NERV_COUNTER_SETUP_CSRS
+	`NERV_COUNTER_SETUP_CSRS	\
+	`NERV_CUSTOM_CSRS
 `endif
 
 module nerv #(
