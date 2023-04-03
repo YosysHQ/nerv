@@ -564,7 +564,8 @@ module nerv #(
 	reg [31:0] csr_rdval;
 	reg [31:0] csr_next;
 
-	wire [ 1:0] csr_mode = (running && !imem_fault && insn_opcode == OPCODE_SYSTEM) ? insn_funct3[1:0] : 2'b 00; // 00=None, 01=RW, 10=RS, 11=RC
+	wire imem_valid = !mem_rd_enable_q && !mem_wr_enable_q && !imem_fault;
+	wire [ 1:0] csr_mode = (running && imem_valid && !irq_num && insn_opcode == OPCODE_SYSTEM) ? insn_funct3[1:0] : 2'b 00; // 00=None, 01=RW, 10=RS, 11=RC
 	wire [11:0] csr_addr = imm_i;
 	wire [31:0] csr_rsval = insn_funct3[2] ? insn_rs1 : rs1_value;
 	wire csr_ro = csr_mode && (csr_mode != 2'b01 && !insn_rs1);
@@ -756,6 +757,7 @@ module nerv #(
 			case (hpm_event)
 				32'h 1 /* cycle counter */: hpm_increment = 1;
 				32'h 2 /* instruction counter */: hpm_increment = running ? 1 : 0;
+				32'h 3 /* memory writes */: hpm_increment = mem_wr_enable_q ? 1 : 0;
 				default: begin
 					csr_hpm_event_next[(hpm_idx)*32 +: 32] = 0;
 					hpm_increment = 0;
