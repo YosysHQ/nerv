@@ -27,7 +27,7 @@ RISCV_ARCH?=rv32i$(shell $(TOOLCHAIN_PREFIX)as -march=rv32i_zicsr --dump-config 
 
 CACHE_SOURCES:=nerv_axi_cache.sv nerv_axi_cache_icache.sv nerv_axi_cache_dcache.sv
 
-.PHONY: test_internal test_axi verify_axi verify_axi_cover
+.PHONY: test_internal test_axi verify_axi verify_axi_cover checks_internal checks_axi all
 
 test_internal: firmware.hex testbench_internal
 	vvp -N testbench_internal $(TESTBENCH_ARGS)
@@ -63,8 +63,19 @@ SVA-AXI4-FVIP:
 	@exit 1
 endif
 
+checks_internal:
+	cd .. && python3 ../../checks/genchecks.py axi_cache/checks_internal
+	$(MAKE) -C checks_internal
+
+checks_axi:
+	cd .. && python3 ../../checks/genchecks.py axi_cache/checks_axi
+	$(MAKE) -C checks_axi
+
+all: test_internal test_axi verify_axi verify_axi_cover checks_internal checks_axi
+
 clean:
 	rm -rf firmware.elf firmware.hex
 	rm -rf testbench_internal testbench_internal.vcd
 	rm -rf testbench_axi testbench_axi.vcd
 	rm -rf verify_axi_prove verify_axi_cover
+	rm -rf checks_internal checks_axi
