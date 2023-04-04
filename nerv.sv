@@ -401,10 +401,7 @@ module nerv #(
 	reg [4:0] mem_rd_reg_q;
 	reg [4:0] mem_rd_func_q;
 
-
-`ifdef NERV_FAULT
 	reg mem_wr_enable_q;
-`endif
 
 	// delayed copies of mem_rd (and mem_wr for NERV_FAULTS)
 	always @(posedge clock) begin
@@ -412,9 +409,7 @@ module nerv #(
 			mem_rd_enable_q <= mem_rd_enable;
 			mem_rd_reg_q <= mem_rd_reg;
 			mem_rd_func_q <= mem_rd_func;
-`ifdef NERV_FAULT
 			mem_wr_enable_q <= mem_wr_enable;
-`endif
 		end
 		if (reset) begin
 			mem_rd_enable_q <= 0;
