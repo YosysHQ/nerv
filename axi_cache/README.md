@@ -25,3 +25,13 @@ Use `make verify_axi` to run this verification.
 The verification is setup in [`verify_axi.sby`](./verify_axi.sby) and [`verify_axi.sv`](./verify_axi.sv).
 
 Note that SVA-AXI4-FVIP requires SVA support and thus this part requires the Tabby CAD Suite and does not work with the OSS CAD Suite. This limitation does not apply to verifying NERV using riscv-formal.
+
+### RISC-V Formal Bus Checks
+
+The caches' correct operation when used together with the NERV core is formally verified using riscv-formal's bus memory checks.
+
+This can be done for the complete caches using the AXI interface, using `make checks_axi`, as well as for the cache internal interface using `make checks_internal`.
+
+The riscv-formal configurations are in [`checks_axi.cfg`](./checks_axi.cfg) and [`checks_internal.cfg`](./checks_internal.cfg). The RVFI wrappers are [`wrapper_axi.sv`](./wrapper_axi.sv) and [`wrapper_internal.sv`](./wrapper_internal.sv).
+
+The RVFI wrapper for the AXI setup also uses a modified version of  [`axi_ram.v`](./axi_ram.v) in which the actual memory is removed and read data is unconstrained. This modified version is contained in [`axi_ram_abstraction.v`](./axi_ram_abstraction.v).
