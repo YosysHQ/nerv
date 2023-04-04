@@ -1,0 +1,5 @@
+*.vcd
+*.hex
+*.elf
+testbench_internal
+testbench_axi
