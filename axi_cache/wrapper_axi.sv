@@ -272,55 +272,64 @@ module rvfi_wrapper (
 		`RVFI_BUS_CHANNEL_CONN(1)
 	);
 
-
-	axi_ram_abstraction #(
-		.ID_WIDTH(1),
-		.ADDR_WIDTH(32)
-	) ram (
-		.clk(clock),
-		.rst(reset),
-		// Write Address Channel (AW)
-		.s_axi_awid(axi_awid),
-		.s_axi_awaddr(axi_awaddr),
-		.s_axi_awlen(axi_awlen),
-		.s_axi_awsize(axi_awsize),
-		.s_axi_awburst(axi_awburst),
-		.s_axi_awlock(axi_awlock),
-		.s_axi_awcache(axi_awcache),
-		.s_axi_awprot(axi_awprot),
-		.s_axi_awvalid(axi_awvalid),
-		.s_axi_awready(axi_awready),
-		// Write Data Channel (W)
-		.s_axi_wdata(axi_wdata),
-		.s_axi_wstrb(axi_wstrb),
-		.s_axi_wlast(axi_wlast),
-		.s_axi_wvalid(axi_wvalid),
-		.s_axi_wready(axi_wready),
-		// Write Response Channel (B)
-		.s_axi_bid(axi_bid),
-		.s_axi_bresp(axi_bresp),
-		.s_axi_bvalid(axi_bvalid),
-		.s_axi_bready(axi_bready),
+	rvfi_bus_axi4_abstract_read ram_read (
+		.clock(clock),
+		.reset(reset),
 		// Read Address Channel (AR)
-		.s_axi_arid(axi_arid),
-		.s_axi_araddr(axi_araddr),
-		.s_axi_arlen(axi_arlen),
-		.s_axi_arsize(axi_arsize),
-		.s_axi_arburst(axi_arburst),
-		.s_axi_arlock(axi_arlock),
-		.s_axi_arcache(axi_arcache),
-		.s_axi_arprot(axi_arprot),
-		.s_axi_arvalid(axi_arvalid),
-		.s_axi_arready(axi_arready),
+		.axi_arid(axi_arid),
+		.axi_araddr(axi_araddr),
+		.axi_arregion(axi_arregion),
+		.axi_arlen(axi_arlen),
+		.axi_arsize(axi_arsize),
+		.axi_arburst(axi_arburst),
+		.axi_arlock(axi_arlock),
+		.axi_arcache(axi_arcache),
+		.axi_arprot(axi_arprot),
+		.axi_arqos(axi_arqos),
+		.axi_aruser(axi_aruser),
+		.axi_arvalid(axi_arvalid),
+		.axi_arready(axi_arready),
 		// Read Data Channel (R)
-		.s_axi_rid(axi_rid),
-		.s_axi_rdata(axi_rdata),
-		.s_axi_rresp(axi_rresp),
-		.s_axi_rlast(axi_rlast),
-		.s_axi_rvalid(axi_rvalid),
-		.s_axi_rready(axi_rready)
+		.axi_rid(axi_rid),
+		.axi_rdata(axi_rdata),
+		.axi_rresp(axi_rresp),
+		.axi_rlast(axi_rlast),
+		.axi_ruser(axi_ruser),
+		.axi_rvalid(axi_rvalid),
+		.axi_rready(axi_rready)
 	);
 
+	rvfi_bus_axi4_abstract_write ram_write (
+		.clock(clock),
+		.reset(reset),
+		// Write Address Channel (AW)
+		.axi_awid(axi_awid),
+		.axi_awaddr(axi_awaddr),
+		.axi_awregion(axi_awregion),
+		.axi_awlen(axi_awlen),
+		.axi_awsize(axi_awsize),
+		.axi_awburst(axi_awburst),
+		.axi_awlock(axi_awlock),
+		.axi_awcache(axi_awcache),
+		.axi_awprot(axi_awprot),
+		.axi_awqos(axi_awqos),
+		.axi_awuser(axi_awuser),
+		.axi_awvalid(axi_awvalid),
+		.axi_awready(axi_awready),
+		// Write Data Channel (W)
+		.axi_wdata(axi_wdata),
+		.axi_wstrb(axi_wstrb),
+		.axi_wlast(axi_wlast),
+		.axi_wuser(axi_wuser),
+		.axi_wvalid(axi_wvalid),
+		.axi_wready(axi_wready),
+		// Write Response Channel (B)
+		.axi_bid(axi_bid),
+		.axi_bresp(axi_bresp),
+		.axi_buser(axi_buser),
+		.axi_bvalid(axi_bvalid),
+		.axi_bready(axi_bready)
+	);
 
 `ifdef NERV_FAIRNESS
 	reg [2:0] stalled = 0;
