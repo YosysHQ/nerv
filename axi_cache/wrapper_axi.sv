@@ -131,6 +131,10 @@ module rvfi_wrapper (
 	wire                          axi_rvalid;
 	wire                          axi_rready;
 
+`ifndef RISCV_FORMAL_MEM_FAULT
+	always @* assume(!axi_rresp[1]);
+	always @* assume(!axi_bresp[1]);
+`endif
 
 	nerv_axi_cache #(
 		.AXI_DATA_WIDTH(AXI_DATA_WIDTH),
@@ -154,6 +158,8 @@ module rvfi_wrapper (
 		.dmem_wdata(dmem_wdata),
 		.dmem_rdata(dmem_rdata),
 		.dmem_fault(dmem_fault),
+
+		.dmem_io(dmem_addr[31:16] == 16'h1234),
 
 		// Write Address Channel (AW)
 		.axi_awid(axi_awid),
@@ -206,6 +212,7 @@ module rvfi_wrapper (
 		.axi_rready(axi_rready)
 	);
 
+`ifdef RISCV_FORMAL_BUS
 	rvfi_bus_axi4_observer_write axi_write (
 		.clock(clock),
 		.reset(reset),
@@ -271,6 +278,7 @@ module rvfi_wrapper (
 
 		`RVFI_BUS_CHANNEL_CONN(1)
 	);
+`endif
 
 	rvfi_bus_axi4_abstract_read ram_read (
 		.clock(clock),
