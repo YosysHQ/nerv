@@ -399,6 +399,8 @@ module nerv #(
 	reg [4:0] mem_rd_reg;
 	reg [4:0] mem_rd_func;
 
+	reg [31:0] mem_rdata;
+
 	reg mem_rd_enable_q;
 	reg [4:0] mem_rd_reg_q;
 	reg [4:0] mem_rd_func_q;
@@ -528,6 +530,7 @@ module nerv #(
 	localparam MCAUSE_ECALL_M_MODE             = 32'h0000000b;
 
 	localparam IRQ_MASK = 32'hFFFF0888;
+	reg [4:0] irq_num;
 
 	// next write, next destination (rd) value & register
 	reg next_wr;
@@ -608,21 +611,21 @@ module nerv #(
 	wire [31:0] csr_``NAME``_next  = csr_``ARRAY``_next[(INDEX)*32 +: 32];  \
 	assign csr_``ARRAY``_sel[INDEX] = csr_``NAME``_sel;
 
-	// dummy out missing select lines
-	assign csr_hpm_event_sel[2:0] = 0;
-	assign csr_hpm_counter_sel[1] = 0;
-	assign csr_hpm_counterh_sel[1] = 0;
-
 `NERV_CSRS
 `undef NERV_CSR_REG_MRW
 `undef NERV_CSR_VAL_MRW
 `undef NERV_CSR_VAL_MRO
 `undef NERV_CSR_ARR_DEF
 `undef NERV_CSR_ARR_MRW
+
+	// dummy out missing select lines
+	assign csr_hpm_event_sel[2:0] = 0;
+	assign csr_hpm_counter_sel[1] = 0;
+	assign csr_hpm_counterh_sel[1] = 0;
+
 `endif // NERV_CSR
 
 	wire [31:0] irq_en;
-	reg [4:0] irq_num;
 	assign irq_en = irq & csr_mie_value;
 
 	// resolve interrupt priority
@@ -1139,7 +1142,6 @@ module nerv #(
 		end
 	end
 
-	reg [31:0] mem_rdata;
 `ifdef NERV_RVFI
 	reg next_rvfi_intr;
 	reg rvfi_trap_q;
