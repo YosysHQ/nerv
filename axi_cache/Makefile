@@ -28,6 +28,8 @@ RISCV_ARCH?=rv32i$(shell $(TOOLCHAIN_PREFIX)as -march=rv32i_zicsr --dump-config 
 
 CACHE_SOURCES:=nerv_axi_cache.sv nerv_axi_cache_icache.sv nerv_axi_cache_dcache.sv
 
+CFLAGS?=-mabi=ilp32 -Os -Wall -Wextra -Wl,-Bstatic,-T,../sections.lds,--strip-debug -ffreestanding -nostdlib
+
 .PHONY: test_internal test_axi verify_axi verify_axi_cover checks_internal checks_axi all
 
 test_internal: firmware.hex testbench_internal
@@ -43,7 +45,7 @@ verify_axi_cover: SVA-AXI4-FVIP verify_axi.sby verify_axi.sv
 	sby -f verify_axi.sby cover
 
 firmware.elf: ../firmware.s ../vectors.s firmware.c
-	$(TOOLCHAIN_PREFIX)gcc -march=$(RISCV_ARCH) -mabi=ilp32 -Os -Wall -Wextra -Wl,-Bstatic,-T,../sections.lds,--strip-debug -ffreestanding -nostdlib -o $@ $^
+	$(TOOLCHAIN_PREFIX)gcc -march=$(RISCV_ARCH) $(CFLAGS) -o $@ $^
 
 firmware.hex: firmware.elf
 	$(TOOLCHAIN_PREFIX)objcopy -O verilog $< $@
