@@ -2,7 +2,7 @@ NERV - Naive Educational RISC-V Processor
 =========================================
 
 NERV is a very simple single-stage RV32I processor. 
-It is equipped with an [RVFI interface](https://github.com/yosyshq/riscv-formal/blob/master/docs/rvfi.md) and is formally verified.
+It is equipped with an [RVFI interface](https://github.com/YosysHQ/riscv-formal/blob/main/docs/source/rvfi.rst) and is formally verified.
 
 ![system diagram](NERV.png)
 
